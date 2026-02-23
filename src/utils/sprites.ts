@@ -4,11 +4,9 @@ import { STAR_COLORS } from './colors';
 export function generateAllTextures(scene: Phaser.Scene): void {
   const has = (key: string) => scene.textures.exists(key) && scene.textures.get(key).key !== '__MISSING';
 
-  if (has('astronaut')) removeBlackBackground(scene, 'astronaut');
-  else generateAstronautTexture(scene);
+  if (!has('astronaut')) generateAstronautTexture(scene);
 
-  if (has('starkid')) removeBlackBackground(scene, 'starkid');
-  else generateStarKidTexture(scene);
+  if (!has('starkid')) generateStarKidTexture(scene);
 
   if (!has('star_red')) generateStarTextures(scene);
   if (!has('asteroid_sm')) generateAsteroidTextures(scene);
@@ -16,29 +14,6 @@ export function generateAllTextures(scene: Phaser.Scene): void {
   if (!has('nebula')) generateNebulaTexture(scene);
   if (!has('particle')) generateParticleTexture(scene);
   if (!has('exhaust')) generateExhaustTexture(scene);
-}
-
-function removeBlackBackground(scene: Phaser.Scene, key: string): void {
-  const source = scene.textures.get(key).getSourceImage() as HTMLImageElement;
-  const canvas = document.createElement('canvas');
-  canvas.width = source.width;
-  canvas.height = source.height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(source, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const d = imageData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2];
-    const brightness = (r + g + b) / 3;
-    if (brightness < 15) {
-      d[i + 3] = 0;
-    } else if (brightness < 40) {
-      d[i + 3] = Math.round(((brightness - 15) / 25) * 255);
-    }
-  }
-  ctx.putImageData(imageData, 0, 0);
-  scene.textures.remove(key);
-  scene.textures.addCanvas(key, canvas);
 }
 
 function generateAstronautTexture(scene: Phaser.Scene): void {

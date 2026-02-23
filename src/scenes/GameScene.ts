@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
+import { Planet } from '../entities/Planet';
 import { StarKid } from '../entities/StarKid';
 import { StarSpawner } from '../systems/StarSpawner';
 import { HazardManager } from '../systems/HazardManager';
@@ -13,6 +14,7 @@ const CHEAT_SEQUENCES = ['STARS', 'STARKID'];
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
+  private planet!: Planet;
   private starSpawner!: StarSpawner;
   private hazardManager!: HazardManager;
   private parallaxBg!: ParallaxBackground;
@@ -35,7 +37,8 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
     this.parallaxBg = new ParallaxBackground(this);
-    this.player = new Player(this);
+    this.planet = new Planet(this);
+    this.player = new Player(this, this.planet.spawnX, this.planet.spawnY);
     this.starSpawner = new StarSpawner(this);
     this.hazardManager = new HazardManager(this);
     this.spectrumHUD = new SpectrumHUD(this);
@@ -267,7 +270,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    this.planet.applyGravity(this.player.sprite, delta);
     this.player.update(delta);
+    this.planet.constrainToSurface(this.player.sprite);
     this.starSpawner.update(time, this.player.sprite.x, this.player.sprite.y);
     this.hazardManager.update(this.player, delta);
     this.parallaxBg.update(time, this.cameras.main);

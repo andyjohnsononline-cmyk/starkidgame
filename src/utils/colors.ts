@@ -35,6 +35,12 @@ export const TOTAL_REQUIRED = REQUIRED_PER_COLOR * STAR_COLORS.length;
 export const WORLD_WIDTH = 4000;
 export const WORLD_HEIGHT = 3000;
 
+export const PLANET_RADIUS = 3500;
+export const PLANET_CENTER_X = WORLD_WIDTH / 2;
+export const PLANET_CENTER_Y = WORLD_HEIGHT + PLANET_RADIUS - 350;
+export const PLANET_GRAVITY = 200;
+export const PLANET_GRAVITY_RANGE = 800;
+
 export function getStarConfig(color: StarColor): StarColorConfig {
   return STAR_COLORS.find(c => c.color === color)!;
 }
