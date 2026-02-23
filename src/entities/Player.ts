@@ -24,13 +24,14 @@ export class Player {
 
     this.sprite = scene.physics.add.sprite(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'astronaut');
     this.sprite.setDepth(10);
+    this.sprite.setScale(0.08);
     this.sprite.setDrag(DRAG);
     this.sprite.setMaxVelocity(MAX_SPEED);
     this.sprite.setCollideWorldBounds(true);
 
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setSize(40, 72);
-    body.setOffset(12, 12);
+    body.setSize(600, 800);
+    body.setOffset(200, 120);
 
     if (scene.input.keyboard) {
       this.cursors = scene.input.keyboard.createCursorKeys();
@@ -151,8 +152,8 @@ export class Player {
       this.exhaust.emitting = true;
       const angle = Math.atan2(body.velocity.y, body.velocity.x);
       this.exhaust.setPosition(
-        this.sprite.x - Math.cos(angle) * 32,
-        this.sprite.y - Math.sin(angle) * 16 + 20,
+        this.sprite.x - Math.cos(angle) * 30,
+        this.sprite.y - Math.sin(angle) * 15 + 25,
       );
     } else {
       this.exhaust.emitting = false;

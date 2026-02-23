@@ -249,7 +249,7 @@ export class GameScene extends Phaser.Scene {
     const gradient = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.7);
     gradient.addColorStop(0, 'rgba(0,0,0,0)');
     gradient.addColorStop(0.6, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.45)');
+    gradient.addColorStop(1, 'rgba(15,5,30,0.45)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
     this.textures.addCanvas('vignette', canvas);
