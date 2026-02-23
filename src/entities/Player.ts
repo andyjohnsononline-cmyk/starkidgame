@@ -27,8 +27,6 @@ export class Player {
     this.sprite.setScale(1.0);
     this.sprite.setDrag(DRAG);
     this.sprite.setMaxVelocity(MAX_SPEED);
-    this.sprite.setCollideWorldBounds(true);
-
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
     body.setSize(48, 72);
     body.setOffset(8, 12);
@@ -141,6 +139,27 @@ export class Player {
 
     if (ax !== 0) {
       this.sprite.setFlipX(ax < 0);
+    }
+
+    this.clampToWorldEdges();
+  }
+
+  private clampToWorldEdges(): void {
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    const halfW = body.width / 2;
+    const halfH = body.height / 2;
+
+    if (this.sprite.x - halfW < 0) {
+      this.sprite.x = halfW;
+      body.velocity.x = Math.max(0, body.velocity.x);
+    } else if (this.sprite.x + halfW > WORLD_WIDTH) {
+      this.sprite.x = WORLD_WIDTH - halfW;
+      body.velocity.x = Math.min(0, body.velocity.x);
+    }
+
+    if (this.sprite.y - halfH < 0) {
+      this.sprite.y = halfH;
+      body.velocity.y = Math.max(0, body.velocity.y);
     }
   }
 
