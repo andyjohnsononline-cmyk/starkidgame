@@ -97,6 +97,13 @@ export class StarSpawner {
     star.collect();
   }
 
+  removeAllStars(): void {
+    for (const star of [...this.stars]) {
+      star.collect();
+    }
+    this.stars.length = 0;
+  }
+
   update(time: number): void {
     for (const star of this.stars) {
       star.update(time);

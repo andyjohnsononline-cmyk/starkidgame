@@ -9,6 +9,8 @@ import { Star } from '../entities/Star';
 import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor } from '../utils/colors';
 import { audioManager } from '../systems/AudioManager';
 
+const CHEAT_SEQUENCE = ['S', 'T', 'A', 'R', 'S'];
+
 export class GameScene extends Phaser.Scene {
   private player!: Player;
   private starSpawner!: StarSpawner;
@@ -21,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   private spectrumComplete = false;
   private starkidReady = false;
   private audioInitialized = false;
+  private cheatBuffer: string[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -78,6 +81,18 @@ export class GameScene extends Phaser.Scene {
     };
     this.input.on('pointerdown', dismissHint);
     this.input.keyboard?.on('keydown', dismissHint);
+
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      this.cheatBuffer.push(event.key.toUpperCase());
+      if (this.cheatBuffer.length > CHEAT_SEQUENCE.length) {
+        this.cheatBuffer.shift();
+      }
+      if (this.cheatBuffer.length === CHEAT_SEQUENCE.length &&
+          this.cheatBuffer.every((k, i) => k === CHEAT_SEQUENCE[i])) {
+        this.cheatBuffer.length = 0;
+        this.cheatCollectAll();
+      }
+    });
   }
 
   private setupStarCollection(): void {
@@ -177,6 +192,21 @@ export class GameScene extends Phaser.Scene {
         });
       },
     );
+  }
+
+  private cheatCollectAll(): void {
+    if (this.spectrumComplete) return;
+
+    this.starSpawner.removeAllStars();
+    const { wasAlreadyComplete } = this.spectrumHUD.fillAll();
+    this.totalCollected = 70;
+
+    audioManager.updateSpectrumProgress(1);
+
+    if (!wasAlreadyComplete) {
+      this.spectrumComplete = true;
+      this.onSpectrumComplete();
+    }
   }
 
   update(time: number, delta: number): void {

@@ -174,4 +174,23 @@ export class SpectrumHUD {
   getCollected(color: StarColor): number {
     return this.collected.get(color) || 0;
   }
+
+  fillAll(): { wasAlreadyComplete: boolean } {
+    const wasAlreadyComplete = this.bloomed;
+    for (const cfg of STAR_COLORS) {
+      const current = this.collected.get(cfg.color) || 0;
+      for (let i = current; i < REQUIRED_PER_COLOR; i++) {
+        this.collected.set(cfg.color, i + 1);
+        this.updateSegment(cfg.color);
+      }
+      if (!this.completed.has(cfg.color) && (this.collected.get(cfg.color) || 0) >= REQUIRED_PER_COLOR) {
+        this.completed.add(cfg.color);
+        this.pulseSegment(cfg.color);
+      }
+    }
+    if (!this.bloomed && this.completed.size === STAR_COLORS.length) {
+      this.bloom();
+    }
+    return { wasAlreadyComplete };
+  }
 }

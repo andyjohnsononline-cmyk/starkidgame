@@ -29,7 +29,7 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
       lifespan: 1500,
       frequency: 80,
       blendMode: 'ADD',
-      tint: [0xff3333, 0xff8833, 0xffdd33, 0x33ff66, 0x3388ff, 0x5533ff, 0xcc33ff],
+      tint: [0xffd700, 0xffcc00, 0xffe066],
       emitting: false,
     });
     this.auraParticles.setDepth(13);
