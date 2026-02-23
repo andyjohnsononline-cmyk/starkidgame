@@ -1,4 +1,4 @@
-import { findEasterEgg } from '../utils/easterEggs';
+import { findEasterEgg, RAINBOW_SLIDE_SENTINEL } from '../utils/easterEggs';
 
 const STARKID_ANSWERS: string[] = [
   'The universe doesn\'t keep secrets — it just waits for someone curious enough to look. You looked. That\'s the whole answer.',
@@ -16,10 +16,12 @@ const STARKID_ANSWERS: string[] = [
 export class QuestionUI {
   private container: HTMLDivElement;
   private onComplete: () => void;
+  private onRainbowSlide: (() => void) | null;
   private answerIndex = Math.floor(Math.random() * STARKID_ANSWERS.length);
 
-  constructor(onComplete: () => void) {
+  constructor(onComplete: () => void, onRainbowSlide?: () => void) {
     this.onComplete = onComplete;
+    this.onRainbowSlide = onRainbowSlide ?? null;
     this.container = document.createElement('div');
     this.container.id = 'question-ui';
     Object.assign(this.container.style, {
@@ -105,6 +107,10 @@ export class QuestionUI {
   private submitQuestion(question: string): void {
     const easterEgg = findEasterEgg(question);
     if (easterEgg) {
+      if (easterEgg === RAINBOW_SLIDE_SENTINEL && this.onRainbowSlide) {
+        this.onRainbowSlide();
+        return;
+      }
       this.showAnswer(easterEgg);
       return;
     }

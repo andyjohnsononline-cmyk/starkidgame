@@ -1,3 +1,5 @@
+export const RAINBOW_SLIDE_SENTINEL = '__RAINBOW_SLIDE__';
+
 interface EasterEgg {
   pattern: RegExp;
   response: string;
@@ -43,6 +45,10 @@ const EASTER_EGGS: EasterEgg[] = [
   {
     pattern: /\bfavorite color\b/i,
     response: 'All of them, together. That\'s the whole point of the spectrum — no single color is the answer. The magic is in the complete rainbow. You just proved that.',
+  },
+  {
+    pattern: /\bbring\s+friends\b|\bbe\s+(your\s+|my\s+)?friends?\b|\bfriendship\b|\bwant.*\bfriends?\b|\bcan\s+we\s+be\s+friends\b|\bmy\s+friend\b|\bour\s+friend/i,
+    response: '__RAINBOW_SLIDE__',
   },
 ];
 
