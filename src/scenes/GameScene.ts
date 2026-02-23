@@ -7,7 +7,7 @@ import { HazardManager } from '../systems/HazardManager';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { SpectrumHUD } from '../ui/SpectrumHUD';
 import { Star } from '../entities/Star';
-import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor } from '../utils/colors';
+import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor, GOLD_HEX } from '../utils/colors';
 import { audioManager } from '../systems/AudioManager';
 
 const CHEAT_SEQUENCES = ['STARS', 'STARKID'];
@@ -125,6 +125,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private collectStar(star: Star): void {
+    if (star.starColor === StarColor.Gold) {
+      audioManager.playGenericCollect();
+      this.createGoldCollectEffect(star.x, star.y);
+      this.starSpawner.removeStar(star);
+      return;
+    }
+
     const result = this.spectrumHUD.addStar(star.starColor);
     this.totalCollected++;
 
@@ -132,7 +139,6 @@ export class GameScene extends Phaser.Scene {
 
     this.createCollectEffect(star.x, star.y, star.starColor);
 
-    // Brief camera zoom pulse for feedback
     this.cameras.main.zoomTo(1.03, 100, 'Sine.easeOut', false, (_cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
       if (progress >= 1) this.cameras.main.zoomTo(1, 200, 'Sine.easeIn');
     });
@@ -152,6 +158,21 @@ export class GameScene extends Phaser.Scene {
       this.spectrumComplete = true;
       this.onSpectrumComplete();
     }
+  }
+
+  private createGoldCollectEffect(x: number, y: number): void {
+    const emitter = this.add.particles(x, y, 'particle', {
+      speed: { min: 30, max: 100 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      lifespan: 350,
+      quantity: 6,
+      tint: GOLD_HEX,
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    emitter.explode(6);
+    this.time.delayedCall(400, () => emitter.destroy());
   }
 
   private createCollectEffect(x: number, y: number, color: StarColor): void {
@@ -282,17 +303,19 @@ export class GameScene extends Phaser.Scene {
 
   private createVignette(): void {
     const w = 1024, h = 768;
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d')!;
-    const gradient = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.7);
-    gradient.addColorStop(0, 'rgba(0,0,0,0)');
-    gradient.addColorStop(0.6, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, 'rgba(15,5,30,0.45)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, w, h);
-    this.textures.addCanvas('vignette', canvas);
+    if (!this.textures.exists('vignette')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      const gradient = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.7);
+      gradient.addColorStop(0, 'rgba(0,0,0,0)');
+      gradient.addColorStop(0.6, 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, 'rgba(15,5,30,0.45)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, w, h);
+      this.textures.addCanvas('vignette', canvas);
+    }
     const img = this.add.image(w / 2, h / 2, 'vignette');
     img.setScrollFactor(0);
     img.setDepth(95);

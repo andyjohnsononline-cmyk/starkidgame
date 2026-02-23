@@ -39,11 +39,13 @@ The astronaut uses a custom hand-drawn sprite (`public/assets/astronaut.png`, 64
 
 A **single scrolling screen world** — the player moves through space and the environment scrolls around them. The world is large enough to explore but not overwhelming. Stars are distributed throughout the scrollable space, not locked to any single area.
 
+A large planet sits at the bottom of the world with an atmospheric glow (translucent blue/cyan arc halos) that makes it visually prominent against the dark space. The player can fly down and visually touch the planet's surface — the constraint boundary accounts for the astronaut's sprite height so the boots meet the planet edge.
+
 ---
 
 ## Star System
 
-There are **7 rainbow star colors**, each corresponding to a color of the visible spectrum:
+There are **7 rainbow star colors**, each corresponding to a color of the visible spectrum, plus a large number of **generic golden bonus stars**:
 
 | Color | Rarity |
 |---|---|
@@ -54,18 +56,21 @@ There are **7 rainbow star colors**, each corresponding to a color of the visibl
 | Blue | Uncommon |
 | Indigo | Rare |
 | Violet | Rare |
+| **Gold** | **Abundant (bonus)** |
 
 Common stars appear frequently and in clusters. Uncommon stars are scattered individually. Rare stars are sparse — maybe drifting in hard-to-reach pockets of the map or hidden behind hazards.
 
-Each star color glows softly with its own light. Collecting a star produces a small satisfying visual/audio pulse.
+**Gold stars** (~200) are scattered abundantly throughout the world. They are collectible and produce a subtle pickup effect and soft ping sound, but they **do not count toward spectrum progress**. They make the world feel alive with things to gather while searching for the colored stars that matter.
+
+Each star color glows softly with its own light. Collecting a colored star produces a bright, short bell-like ping chime with reverb. Collecting a gold star produces a softer, quieter ping.
 
 ---
 
 ## HUD / Progress Tracker
 
-A **rainbow spectrum tracker** runs along the bottom (or side) of the screen — a horizontal band divided into 7 color segments, each with a fill level that rises as stars are collected. Think of it like a stained glass window slowly coming to life, one color at a time.
+A **rainbow spectrum tracker** runs along the bottom of the screen — a horizontal band divided into 7 color segments, each with a fill level that rises as the correct colored stars are collected. Think of it like a stained glass window slowly coming to life, one color at a time.
 
-Each segment shows a small count (e.g., 7/10) and fills with glowing color as progress is made. When a color completes, it locks in with a soft pulse of light and a chime — the segment stays fully lit and vibrant for the rest of the run. When all 7 segments are full and glowing, the tracker itself blooms — a visual signal that the full spectrum is complete and StarKid is reachable.
+Each segment fills with glowing color as progress is made — **no numbers are shown**, just visual progress bars. When a color completes, it locks in with a soft pulse of light and a chime — the segment stays fully lit and vibrant for the rest of the run. When all 7 segments are full and glowing, the tracker itself blooms — a visual signal that the full spectrum is complete and StarKid is reachable. A subtle "spectrum" label sits above the bar.
 
 No score, no timer. The tracker is the only UI element that matters.
 
@@ -78,7 +83,7 @@ No enemies. Hazards are **environmental** — things that exist naturally in spa
 - **Asteroid fields** — drifting rocks that push the player back or briefly stun them
 - **Black hole pull zones** — areas that drag the astronaut if they get too close
 - **Nebula fog patches** — visibility reduced, harder to spot stars
-- **Solar flares** — brief bursts of light/energy that temporarily disorient
+- **Solar flares** — brief bursts of light/energy that temporarily disorient (yellow flash overlay and slowed movement, no camera shake)
 
 Hazards don't kill the player. They slow, push, or impede — maintaining the calm, exploratory tone.
 
@@ -103,6 +108,12 @@ A simple, beautiful input appears:
 The player types anything they want. StarKid answers. This is powered by the Claude API — StarKid has a defined voice: wise, warm, a little cosmic, never condescending. He speaks to you like you're already capable of understanding the answer. He exists in his truest form, and for this moment, so do you.
 
 Certain special questions trigger **easter egg responses** — predefined answers that bypass the API and deliver hand-crafted StarKid moments. These are matched by keyword patterns before the API is called.
+
+### The Rainbow Slide (Friend Easter Egg)
+
+If the player asks about friendship (e.g., "can we be friends?"), the question UI dismisses and a **playable rainbow slide** begins. A wide, thick rainbow arc (7 color bands) scrolls slowly across the screen while StarKid and the astronaut ride along it. The player controls the astronaut with arrow keys/WASD — speeding up and slowing down along the rainbow path with momentum-based surfing physics. StarKid slides ahead at a steady pace.
+
+As the rainbow plays, it **lights up the universe**: the dark background gradually brightens, faint twinkle stars fade in, and the rainbow casts a soft additive glow into the surrounding space. The astronaut bobs and tilts based on velocity, and sparkle particles intensify when moving fast.
 
 The answer appears on screen. There is no next level. The game ends here, in this exchange.
 
@@ -129,7 +140,7 @@ Sprites support both programmatic generation (fallback) and external image asset
 |---|---|---|
 | Astronaut (player) | Custom asset | `public/assets/astronaut.png` (64x96px, hand-drawn illustration) |
 | StarKid | Programmatic | Generated at boot (`src/utils/sprites.ts`) |
-| Stars (7 colors) | Programmatic | Generated at boot |
+| Stars (7 colors + gold) | Programmatic | Generated at boot |
 | Asteroids (sm/md/lg) | Programmatic | Generated at boot |
 | Black hole | Programmatic | Generated at boot |
 | Nebula | Programmatic | Generated at boot |
@@ -139,12 +150,13 @@ Sprites support both programmatic generation (fallback) and external image asset
 
 ## Audio
 
-**Rich ambient space music** — a multi-layered synthesized soundscape that evokes strings and warmth. Multiple detuned oscillators create pad-like textures, with slow LFO modulation for organic movement and gentle arpeggiated patterns that evolve over time. The tone is wonder-filled and unhurried.
+**Galaxy-style ambient space music** — a multi-layered synthesized soundscape with an ethereal, cosmic quality. Multiple detuned oscillators create deep pad textures, with higher shimmer voices (220 Hz, 330 Hz, 880 Hz) adding sparkle. A slow LFO modulates the sound for organic movement, and gentle arpeggiated patterns with heavy reverb evolve over time. A high-frequency shimmer oscillator with tremolo creates a subtle twinkling backdrop. The tone is vast, galaxy-like, and unhurried.
 
-The music evolves as the spectrum fills — as more colors are collected, new harmonic layers and oscillator voices are added, so the arrangement genuinely grows richer. The universe wakes up with you.
+The music evolves as the spectrum fills — as more colors are collected, new harmonic layers and oscillator voices are added, so the arrangement genuinely grows richer. The universe wakes up with you. The reverb is wide (3.5s decay) to evoke the spaciousness of the cosmos.
 
 Sound effects are soft and satisfying:
-- Delicate chime/shimmer on star collect with reverb-like resonance, tuned to the color's position in the spectrum
+- **Colored star collect**: Short, bright, bell-like ping chime — a sharp sine attack with overtone harmonics (3rd and 5th) for metallic ring, fast decay (~0.5s), heavy reverb send to let the ping ring out in space. Each color has its own pitch.
+- **Gold star collect**: A softer, quieter single ping (~0.3s) at a fixed pitch, subtle enough to not overwhelm when collecting many.
 - Gentle jetpack whoosh on movement
 - Full orchestral swell when StarKid becomes visible
 - A quiet, held chord during the question moment — space for thought

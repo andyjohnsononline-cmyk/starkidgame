@@ -6,6 +6,7 @@ export enum StarColor {
   Blue = 'blue',
   Indigo = 'indigo',
   Violet = 'violet',
+  Gold = 'gold',
 }
 
 export type Rarity = 'common' | 'uncommon' | 'rare';
@@ -31,6 +32,10 @@ export const STAR_COLORS: StarColorConfig[] = [
 
 export const REQUIRED_PER_COLOR = 10;
 export const TOTAL_REQUIRED = REQUIRED_PER_COLOR * STAR_COLORS.length;
+
+export const GOLD_SPAWN_COUNT = 200;
+export const GOLD_HEX = 0xffd700;
+export const GOLD_CSS_HEX = '#ffd700';
 
 export const WORLD_WIDTH = 4000;
 export const WORLD_HEIGHT = 3000;

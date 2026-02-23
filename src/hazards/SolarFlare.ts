@@ -62,9 +62,6 @@ export class SolarFlare {
       },
     });
 
-    if (this.scene.cameras.main) {
-      this.scene.cameras.main.shake(300, 0.003);
-    }
   }
 
   destroy(): void {

@@ -17,6 +17,8 @@ export class Planet {
   private scene: Phaser.Scene;
   private sprite: Phaser.GameObjects.Image;
 
+  private atmosphereGlow: Phaser.GameObjects.Graphics;
+
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
 
@@ -28,6 +30,27 @@ export class Planet {
     this.sprite.setScale(scale);
 
     this.sprite.setDepth(3);
+
+    this.atmosphereGlow = scene.add.graphics();
+    this.atmosphereGlow.setDepth(3.5);
+    this.drawAtmosphere();
+  }
+
+  private drawAtmosphere(): void {
+    const g = this.atmosphereGlow;
+    const layers = [
+      { offset: 8, width: 5, color: 0x66ccff, alpha: 0.18 },
+      { offset: 20, width: 4, color: 0x44aaff, alpha: 0.12 },
+      { offset: 35, width: 3, color: 0x3388dd, alpha: 0.07 },
+      { offset: 50, width: 2, color: 0x2266bb, alpha: 0.04 },
+    ];
+
+    for (const layer of layers) {
+      g.lineStyle(layer.width, layer.color, layer.alpha);
+      g.beginPath();
+      g.arc(this.centerX, this.centerY, this.radius + layer.offset, Math.PI * 1.15, Math.PI * 1.85, false);
+      g.strokePath();
+    }
   }
 
   applyGravity(sprite: Phaser.Physics.Arcade.Sprite, delta: number): void {
@@ -55,12 +78,13 @@ export class Planet {
     const dy = sprite.y - this.centerY;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist >= this.radius) return;
+    const surfaceRadius = this.radius - 30;
+    if (dist >= surfaceRadius) return;
 
     const angle = Math.atan2(dy, dx);
     sprite.setPosition(
-      this.centerX + Math.cos(angle) * this.radius,
-      this.centerY + Math.sin(angle) * this.radius,
+      this.centerX + Math.cos(angle) * surfaceRadius,
+      this.centerY + Math.sin(angle) * surfaceRadius,
     );
 
     const body = sprite.body as Phaser.Physics.Arcade.Body;
