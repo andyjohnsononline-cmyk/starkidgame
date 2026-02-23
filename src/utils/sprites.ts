@@ -4,10 +4,10 @@ import { STAR_COLORS } from './colors';
 export function generateAllTextures(scene: Phaser.Scene): void {
   const has = (key: string) => scene.textures.exists(key) && scene.textures.get(key).key !== '__MISSING';
 
-  if (has('astronaut')) removeWhiteBackground(scene, 'astronaut');
+  if (has('astronaut')) removeBlackBackground(scene, 'astronaut');
   else generateAstronautTexture(scene);
 
-  if (has('starkid')) removeWhiteBackground(scene, 'starkid');
+  if (has('starkid')) removeBlackBackground(scene, 'starkid');
   else generateStarKidTexture(scene);
 
   if (!has('star_red')) generateStarTextures(scene);
@@ -18,7 +18,7 @@ export function generateAllTextures(scene: Phaser.Scene): void {
   if (!has('exhaust')) generateExhaustTexture(scene);
 }
 
-function removeWhiteBackground(scene: Phaser.Scene, key: string): void {
+function removeBlackBackground(scene: Phaser.Scene, key: string): void {
   const source = scene.textures.get(key).getSourceImage() as HTMLImageElement;
   const canvas = document.createElement('canvas');
   canvas.width = source.width;
@@ -30,10 +30,10 @@ function removeWhiteBackground(scene: Phaser.Scene, key: string): void {
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i], g = d[i + 1], b = d[i + 2];
     const brightness = (r + g + b) / 3;
-    if (brightness > 240) {
+    if (brightness < 15) {
       d[i + 3] = 0;
-    } else if (brightness > 220) {
-      d[i + 3] = Math.round(((240 - brightness) / 20) * 255);
+    } else if (brightness < 40) {
+      d[i + 3] = Math.round(((brightness - 15) / 25) * 255);
     }
   }
   ctx.putImageData(imageData, 0, 0);
@@ -293,42 +293,36 @@ function generateBlackHoleTexture(scene: Phaser.Scene): void {
 }
 
 function generateNebulaTexture(scene: Phaser.Scene): void {
-  const g = scene.add.graphics();
   const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
 
   const blobs = [
-    { x: 100, y: 120, r: 80, color: 0xaa33cc, alpha: 0.15, verts: 9 },
-    { x: 140, y: 100, r: 70, color: 0x4455dd, alpha: 0.12, verts: 7 },
-    { x: 160, y: 150, r: 90, color: 0xcc44aa, alpha: 0.18, verts: 8 },
-    { x: 110, y: 160, r: 60, color: 0x3388aa, alpha: 0.10, verts: 6 },
-    { x: 130, y: 130, r: 100, color: 0x7733cc, alpha: 0.20, verts: 10 },
-    { x: 80, y: 140, r: 65, color: 0xbb55cc, alpha: 0.14, verts: 7 },
-    { x: 170, y: 120, r: 55, color: 0x2266bb, alpha: 0.10, verts: 6 },
+    { x: 100, y: 120, r: 90, color: [170, 51, 204], alpha: 0.18 },
+    { x: 145, y: 95, r: 75, color: [68, 85, 221], alpha: 0.14 },
+    { x: 165, y: 155, r: 100, color: [204, 68, 170], alpha: 0.20 },
+    { x: 105, y: 160, r: 65, color: [51, 136, 170], alpha: 0.12 },
+    { x: 128, y: 128, r: 110, color: [119, 51, 204], alpha: 0.22 },
+    { x: 75, y: 140, r: 70, color: [187, 85, 204], alpha: 0.16 },
+    { x: 175, y: 115, r: 60, color: [34, 102, 187], alpha: 0.12 },
+    { x: 128, y: 100, r: 85, color: [153, 51, 187], alpha: 0.10 },
+    { x: 90, y: 90, r: 50, color: [100, 70, 200], alpha: 0.08 },
   ];
 
-  const seed = 42;
-  let rng = seed;
-  const seededRandom = () => {
-    rng = (rng * 16807 + 0) % 2147483647;
-    return rng / 2147483647;
-  };
-
   for (const b of blobs) {
-    g.fillStyle(b.color, b.alpha);
-    const pts: Phaser.Math.Vector2[] = [];
-    for (let v = 0; v < b.verts; v++) {
-      const angle = (v / b.verts) * Math.PI * 2;
-      const wobble = 0.6 + seededRandom() * 0.5;
-      pts.push(new Phaser.Math.Vector2(
-        b.x + Math.cos(angle) * b.r * wobble,
-        b.y + Math.sin(angle) * b.r * wobble,
-      ));
-    }
-    g.fillPoints(pts, true);
+    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    const [r, g, a] = b.color;
+    grad.addColorStop(0, `rgba(${r},${g},${a},${b.alpha})`);
+    grad.addColorStop(0.3, `rgba(${r},${g},${a},${b.alpha * 0.7})`);
+    grad.addColorStop(0.6, `rgba(${r},${g},${a},${b.alpha * 0.35})`);
+    grad.addColorStop(1, `rgba(${r},${g},${a},0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
   }
 
-  g.generateTexture('nebula', size, size);
-  g.destroy();
+  scene.textures.addCanvas('nebula', canvas);
 }
 
 function generateParticleTexture(scene: Phaser.Scene): void {

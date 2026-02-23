@@ -8,11 +8,25 @@ interface TwinkleStar {
   phase: number;
 }
 
+interface DriftingCloud {
+  sprite: Phaser.GameObjects.Image;
+  baseX: number;
+  baseY: number;
+  driftX: number;
+  driftY: number;
+  speedX: number;
+  speedY: number;
+  phase: number;
+  baseAlpha: number;
+  alphaSpeed: number;
+}
+
 export class ParallaxBackground {
   private scene: Phaser.Scene;
   private starFieldImage: Phaser.GameObjects.Image;
   private nebulaSprites: Phaser.GameObjects.Image[] = [];
-  private geometricShapes: Phaser.GameObjects.Image;
+  private fogPatches: Phaser.GameObjects.Image[] = [];
+  private driftingClouds: DriftingCloud[] = [];
   private twinkleStars: TwinkleStar[] = [];
 
   constructor(scene: Phaser.Scene) {
@@ -21,7 +35,7 @@ export class ParallaxBackground {
     this.starFieldImage = this.createStarField();
     this.createTwinkleStars();
     this.createBrightStars();
-    this.geometricShapes = this.createGeometricLayer();
+    this.createFogPatches();
     this.createNebulaStreaks();
     this.createNebulaClouds();
   }
@@ -158,54 +172,71 @@ export class ParallaxBackground {
     }
   }
 
-  private createGeometricLayer(): Phaser.GameObjects.Image {
-    const g = this.scene.add.graphics();
-    const count = 60;
+  private createFogPatches(): void {
+    const fogConfigs = [
+      { x: 500, y: 400, r: 250, color: [136, 68, 204] },
+      { x: 1600, y: 600, r: 300, color: [85, 102, 221] },
+      { x: 3000, y: 500, r: 220, color: [170, 85, 204] },
+      { x: 800, y: 1800, r: 280, color: [68, 170, 170] },
+      { x: 2200, y: 1200, r: 260, color: [204, 85, 170] },
+      { x: 3400, y: 2000, r: 240, color: [119, 51, 204] },
+      { x: 1200, y: 2400, r: 200, color: [85, 130, 200] },
+      { x: 2800, y: 800, r: 270, color: [170, 68, 180] },
+    ];
 
-    for (let i = 0; i < count; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const alpha = 0.04 + Math.random() * 0.08;
-      const size = 8 + Math.random() * 20;
-      const angle = Math.random() * Math.PI * 2;
-      const type = Math.floor(Math.random() * 3);
+    for (let i = 0; i < fogConfigs.length; i++) {
+      const cfg = fogConfigs[i];
+      const patchSize = cfg.r * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = patchSize;
+      canvas.height = patchSize;
+      const ctx = canvas.getContext('2d')!;
+      const cx = patchSize / 2, cy = patchSize / 2;
 
-      const tints = [0x8844cc, 0x5566dd, 0xaa55cc, 0x44aaaa, 0xcc55aa];
-      const color = tints[Math.floor(Math.random() * tints.length)];
-      g.lineStyle(0.8, color, alpha);
+      const subBlobs = [
+        { ox: 0, oy: 0, scale: 1.0, alpha: 0.06 },
+        { ox: -cfg.r * 0.2, oy: cfg.r * 0.15, scale: 0.7, alpha: 0.05 },
+        { ox: cfg.r * 0.25, oy: -cfg.r * 0.1, scale: 0.6, alpha: 0.04 },
+        { ox: cfg.r * 0.1, oy: cfg.r * 0.25, scale: 0.5, alpha: 0.03 },
+      ];
 
-      if (type === 0) {
-        const pts: Phaser.Math.Vector2[] = [];
-        for (let v = 0; v < 6; v++) {
-          const a = angle + (v / 6) * Math.PI * 2;
-          pts.push(new Phaser.Math.Vector2(x + Math.cos(a) * size, y + Math.sin(a) * size));
-        }
-        g.strokePoints(pts, true);
-      } else if (type === 1) {
-        const pts: Phaser.Math.Vector2[] = [];
-        for (let v = 0; v < 3; v++) {
-          const a = angle + (v / 3) * Math.PI * 2;
-          pts.push(new Phaser.Math.Vector2(x + Math.cos(a) * size, y + Math.sin(a) * size));
-        }
-        g.strokePoints(pts, true);
-      } else {
-        const stretch = 0.3 + Math.random() * 0.4;
-        g.strokePoints([
-          new Phaser.Math.Vector2(x, y - size),
-          new Phaser.Math.Vector2(x + size * stretch, y),
-          new Phaser.Math.Vector2(x, y + size),
-          new Phaser.Math.Vector2(x - size * stretch, y),
-        ], true);
+      for (const sub of subBlobs) {
+        const grad = ctx.createRadialGradient(
+          cx + sub.ox, cy + sub.oy, 0,
+          cx + sub.ox, cy + sub.oy, cfg.r * sub.scale,
+        );
+        const [r, g, b] = cfg.color;
+        grad.addColorStop(0, `rgba(${r},${g},${b},${sub.alpha})`);
+        grad.addColorStop(0.4, `rgba(${r},${g},${b},${sub.alpha * 0.6})`);
+        grad.addColorStop(0.7, `rgba(${r},${g},${b},${sub.alpha * 0.25})`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, patchSize, patchSize);
       }
+
+      const texKey = `fog_patch_${i}`;
+      this.scene.textures.addCanvas(texKey, canvas);
+      const img = this.scene.add.image(cfg.x, cfg.y, texKey);
+      img.setDepth(-95);
+      img.setScrollFactor(0.45);
+      img.setBlendMode(Phaser.BlendModes.ADD);
+      const baseAlpha = 0.6 + Math.random() * 0.3;
+      img.setAlpha(baseAlpha);
+      this.fogPatches.push(img);
+
+      this.driftingClouds.push({
+        sprite: img,
+        baseX: cfg.x,
+        baseY: cfg.y,
+        driftX: 40 + Math.random() * 60,
+        driftY: 25 + Math.random() * 45,
+        speedX: 0.05 + Math.random() * 0.08,
+        speedY: 0.04 + Math.random() * 0.07,
+        phase: Math.random() * Math.PI * 2,
+        baseAlpha,
+        alphaSpeed: 0.1 + Math.random() * 0.15,
+      });
     }
-
-    g.generateTexture('bg_geometric', WORLD_WIDTH, WORLD_HEIGHT);
-    g.destroy();
-
-    const img = this.scene.add.image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'bg_geometric');
-    img.setDepth(-95);
-    img.setScrollFactor(0.45);
-    return img;
   }
 
   private createNebulaStreaks(): Phaser.GameObjects.Image {
@@ -268,13 +299,27 @@ export class ParallaxBackground {
     for (const pos of positions) {
       const nebula = this.scene.add.image(pos.x, pos.y, 'nebula');
       nebula.setDepth(-90);
-      nebula.setAlpha(0.8 + Math.random() * 0.2);
+      const baseAlpha = 0.5 + Math.random() * 0.3;
+      nebula.setAlpha(baseAlpha);
       nebula.setScale(2.0 + Math.random() * 3);
       nebula.setAngle(Math.random() * 360);
       nebula.setScrollFactor(0.6);
       nebula.setBlendMode(Phaser.BlendModes.ADD);
       nebula.setTint(tints[Math.floor(Math.random() * tints.length)]);
       this.nebulaSprites.push(nebula);
+
+      this.driftingClouds.push({
+        sprite: nebula,
+        baseX: pos.x,
+        baseY: pos.y,
+        driftX: 30 + Math.random() * 50,
+        driftY: 20 + Math.random() * 40,
+        speedX: 0.08 + Math.random() * 0.12,
+        speedY: 0.06 + Math.random() * 0.10,
+        phase: Math.random() * Math.PI * 2,
+        baseAlpha,
+        alphaSpeed: 0.15 + Math.random() * 0.2,
+      });
     }
   }
 
@@ -307,6 +352,15 @@ export class ParallaxBackground {
       const flicker = Math.sin(t * star.speed + star.phase);
       const alpha = star.baseAlpha * (0.3 + 0.7 * ((flicker + 1) / 2));
       star.sprite.setAlpha(alpha);
+    }
+
+    for (const cloud of this.driftingClouds) {
+      const x = cloud.baseX + Math.sin(t * cloud.speedX + cloud.phase) * cloud.driftX;
+      const y = cloud.baseY + Math.cos(t * cloud.speedY + cloud.phase * 1.3) * cloud.driftY;
+      cloud.sprite.setPosition(x, y);
+
+      const alphaWave = Math.sin(t * cloud.alphaSpeed + cloud.phase * 0.7);
+      cloud.sprite.setAlpha(cloud.baseAlpha * (0.6 + 0.4 * ((alphaWave + 1) / 2)));
     }
   }
 }
