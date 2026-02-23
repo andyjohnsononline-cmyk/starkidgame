@@ -51,6 +51,7 @@ export class ParallaxBackground {
   }
 
   private createColorWash(): Phaser.GameObjects.Image {
+    if (!this.scene.textures.exists('bg_colorwash')) {
     const canvas = document.createElement('canvas');
     canvas.width = WORLD_WIDTH;
     canvas.height = WORLD_HEIGHT;
@@ -110,6 +111,7 @@ export class ParallaxBackground {
     ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
     this.scene.textures.addCanvas('bg_colorwash', canvas);
+    }
     const img = this.scene.add.image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'bg_colorwash');
     img.setDepth(-110);
     img.setScrollFactor(0.05);
@@ -117,19 +119,21 @@ export class ParallaxBackground {
   }
 
   private createDeepStarField(): Phaser.GameObjects.Image {
-    const g = this.scene.add.graphics();
-    const count = 800;
+    if (!this.scene.textures.exists('bg_deepstars')) {
+      const g = this.scene.add.graphics();
+      const count = 800;
 
-    for (let i = 0; i < count; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const alpha = 0.15 + Math.random() * 0.35;
-      g.fillStyle(0xccccee, alpha);
-      g.fillCircle(x, y, 0.5 + Math.random() * 0.5);
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * WORLD_WIDTH;
+        const y = Math.random() * WORLD_HEIGHT;
+        const alpha = 0.15 + Math.random() * 0.35;
+        g.fillStyle(0xccccee, alpha);
+        g.fillCircle(x, y, 0.5 + Math.random() * 0.5);
+      }
+
+      g.generateTexture('bg_deepstars', WORLD_WIDTH, WORLD_HEIGHT);
+      g.destroy();
     }
-
-    g.generateTexture('bg_deepstars', WORLD_WIDTH, WORLD_HEIGHT);
-    g.destroy();
 
     const img = this.scene.add.image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'bg_deepstars');
     img.setDepth(-108);
@@ -138,46 +142,48 @@ export class ParallaxBackground {
   }
 
   private createStarField(): Phaser.GameObjects.Image {
-    const g = this.scene.add.graphics();
-    const count = 2000;
-    const starTints = [0xffffff, 0xffffff, 0xffffff, 0xccddff, 0xffeedd, 0xffaadd, 0xaaddff];
+    if (!this.scene.textures.exists('bg_starfield')) {
+      const g = this.scene.add.graphics();
+      const count = 2000;
+      const starTints = [0xffffff, 0xffffff, 0xffffff, 0xccddff, 0xffeedd, 0xffaadd, 0xaaddff];
 
-    for (let i = 0; i < count; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const alpha = 0.3 + Math.random() * 0.7;
-      const roll = Math.random();
-      const tint = starTints[Math.floor(Math.random() * starTints.length)];
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * WORLD_WIDTH;
+        const y = Math.random() * WORLD_HEIGHT;
+        const alpha = 0.3 + Math.random() * 0.7;
+        const roll = Math.random();
+        const tint = starTints[Math.floor(Math.random() * starTints.length)];
 
-      g.fillStyle(tint, alpha);
+        g.fillStyle(tint, alpha);
 
-      if (roll < 0.4) {
-        const size = Math.random() < 0.7 ? 1 : 1.5;
-        g.fillCircle(x, y, size);
-      } else if (roll < 0.6) {
-        const arm = 1 + Math.random() * 1.5;
-        g.fillRect(x - arm, y - 0.5, arm * 2, 1);
-        g.fillRect(x - 0.5, y - arm, 1, arm * 2);
-      } else if (roll < 0.8) {
-        const s = 1 + Math.random();
-        g.fillPoints([
-          new Phaser.Math.Vector2(x, y - s),
-          new Phaser.Math.Vector2(x + s, y),
-          new Phaser.Math.Vector2(x, y + s),
-          new Phaser.Math.Vector2(x - s, y),
-        ], true);
-      } else {
-        const s = 1 + Math.random();
-        g.fillPoints([
-          new Phaser.Math.Vector2(x, y - s),
-          new Phaser.Math.Vector2(x + s * 0.7, y + s * 0.5),
-          new Phaser.Math.Vector2(x - s * 0.7, y + s * 0.5),
-        ], true);
+        if (roll < 0.4) {
+          const size = Math.random() < 0.7 ? 1 : 1.5;
+          g.fillCircle(x, y, size);
+        } else if (roll < 0.6) {
+          const arm = 1 + Math.random() * 1.5;
+          g.fillRect(x - arm, y - 0.5, arm * 2, 1);
+          g.fillRect(x - 0.5, y - arm, 1, arm * 2);
+        } else if (roll < 0.8) {
+          const s = 1 + Math.random();
+          g.fillPoints([
+            new Phaser.Math.Vector2(x, y - s),
+            new Phaser.Math.Vector2(x + s, y),
+            new Phaser.Math.Vector2(x, y + s),
+            new Phaser.Math.Vector2(x - s, y),
+          ], true);
+        } else {
+          const s = 1 + Math.random();
+          g.fillPoints([
+            new Phaser.Math.Vector2(x, y - s),
+            new Phaser.Math.Vector2(x + s * 0.7, y + s * 0.5),
+            new Phaser.Math.Vector2(x - s * 0.7, y + s * 0.5),
+          ], true);
+        }
       }
-    }
 
-    g.generateTexture('bg_starfield', WORLD_WIDTH, WORLD_HEIGHT);
-    g.destroy();
+      g.generateTexture('bg_starfield', WORLD_WIDTH, WORLD_HEIGHT);
+      g.destroy();
+    }
 
     const img = this.scene.add.image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'bg_starfield');
     img.setDepth(-100);

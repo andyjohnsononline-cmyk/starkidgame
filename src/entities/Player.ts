@@ -160,6 +160,9 @@ export class Player {
     if (this.sprite.y - halfH < 0) {
       this.sprite.y = halfH;
       body.velocity.y = Math.max(0, body.velocity.y);
+    } else if (this.sprite.y + halfH > WORLD_HEIGHT) {
+      this.sprite.y = WORLD_HEIGHT - halfH;
+      body.velocity.y = Math.min(0, body.velocity.y);
     }
   }
 
