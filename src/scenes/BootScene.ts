@@ -18,6 +18,7 @@ const SPRITE_ASSETS: Array<{ key: string; path: string }> = [
   { key: 'nebula', path: 'assets/nebula.png' },
   { key: 'particle', path: 'assets/particle.png' },
   { key: 'exhaust', path: 'assets/exhaust.png' },
+  { key: 'planet', path: 'assets/planet.png' },
 ];
 
 export class BootScene extends Phaser.Scene {

@@ -19,19 +19,19 @@ export class Player {
   private wasThrusting = false;
   private disoriented = false;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, spawnX: number = WORLD_WIDTH / 2, spawnY: number = WORLD_HEIGHT / 2) {
     this.scene = scene;
 
-    this.sprite = scene.physics.add.sprite(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'astronaut');
+    this.sprite = scene.physics.add.sprite(spawnX, spawnY, 'astronaut');
     this.sprite.setDepth(10);
-    this.sprite.setScale(0.08);
+    this.sprite.setScale(1.0);
     this.sprite.setDrag(DRAG);
     this.sprite.setMaxVelocity(MAX_SPEED);
     this.sprite.setCollideWorldBounds(true);
 
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setSize(600, 800);
-    body.setOffset(200, 120);
+    body.setSize(48, 72);
+    body.setOffset(8, 12);
 
     if (scene.input.keyboard) {
       this.cursors = scene.input.keyboard.createCursorKeys();
