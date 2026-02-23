@@ -104,9 +104,22 @@ export class StarSpawner {
     this.stars.length = 0;
   }
 
-  update(time: number): void {
+  update(time: number, playerX?: number, playerY?: number): void {
+    const magnetRadius = 60;
+    const magnetStrength = 1.5;
+
     for (const star of this.stars) {
       star.update(time);
+
+      if (playerX !== undefined && playerY !== undefined) {
+        const dx = playerX - star.x;
+        const dy = playerY - star.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < magnetRadius && dist > 5) {
+          const pull = magnetStrength * (1 - dist / magnetRadius);
+          star.nudge(dx / dist * pull, dy / dist * pull);
+        }
+      }
     }
   }
 }

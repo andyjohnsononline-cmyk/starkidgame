@@ -4,9 +4,11 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
   private glowSprite: Phaser.GameObjects.Sprite;
   private auraParticles: Phaser.GameObjects.Particles.ParticleEmitter;
   private materialized = false;
+  private baseY: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'starkid');
+    this.baseY = y;
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setDepth(15);
@@ -60,8 +62,9 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
     if (!this.materialized) return;
     const t = time / 1000;
     const float = Math.sin(t * 0.8) * 5;
-    this.y = this.y + float * 0.02;
+    this.y = this.baseY + float;
     this.glowSprite.setPosition(this.x, this.y);
+    this.auraParticles.setPosition(this.x, this.y);
 
     const pulse = 2.5 + 0.5 * Math.sin(t * 1.2);
     this.glowSprite.setScale(pulse);

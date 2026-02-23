@@ -37,7 +37,7 @@ export class BlackHole {
     });
   }
 
-  applyGravity(playerBody: Phaser.Physics.Arcade.Body): boolean {
+  applyGravity(playerBody: Phaser.Physics.Arcade.Body, delta: number): boolean {
     const dx = this.x - playerBody.center.x;
     const dy = this.y - playerBody.center.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -46,8 +46,9 @@ export class BlackHole {
       const strength = PULL_STRENGTH * (1 - dist / PULL_RADIUS);
       const nx = dx / dist;
       const ny = dy / dist;
-      playerBody.velocity.x += nx * strength * 0.016;
-      playerBody.velocity.y += ny * strength * 0.016;
+      const dt = delta / 1000;
+      playerBody.velocity.x += nx * strength * dt;
+      playerBody.velocity.y += ny * strength * dt;
       return true;
     }
     return false;

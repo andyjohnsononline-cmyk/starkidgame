@@ -95,19 +95,48 @@ export class WinScene extends Phaser.Scene {
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.questionUI?.destroy();
 
-      // Show a gentle "The End" message
-      const endText = this.add.text(512, 384, '✦', {
+      for (const p of this.particles) {
+        p.stop();
+      }
+
+      const endText = this.add.text(512, 360, '✦', {
         fontSize: '48px',
         color: '#ffeedd',
         align: 'center',
       });
       endText.setOrigin(0.5);
       endText.setAlpha(0);
+
+      const playAgain = this.add.text(512, 440, 'Play Again', {
+        fontSize: '18px',
+        fontFamily: 'Georgia, serif',
+        color: '#8899aa',
+        align: 'center',
+      });
+      playAgain.setOrigin(0.5);
+      playAgain.setAlpha(0);
+      playAgain.setInteractive({ useHandCursor: true });
+      playAgain.on('pointerover', () => playAgain.setColor('#ffd700'));
+      playAgain.on('pointerout', () => playAgain.setColor('#8899aa'));
+      playAgain.on('pointerdown', () => {
+        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('GameScene');
+        });
+      });
+
       this.cameras.main.fadeIn(2000, 0, 0, 0);
       this.tweens.add({
         targets: endText,
         alpha: 0.6,
         duration: 3000,
+        ease: 'Sine.easeInOut',
+      });
+      this.tweens.add({
+        targets: playAgain,
+        alpha: 0.8,
+        delay: 3000,
+        duration: 2000,
         ease: 'Sine.easeInOut',
       });
     });
