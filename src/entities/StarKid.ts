@@ -1,0 +1,70 @@
+import Phaser from 'phaser';
+
+export class StarKid extends Phaser.Physics.Arcade.Sprite {
+  private glowSprite: Phaser.GameObjects.Sprite;
+  private auraParticles: Phaser.GameObjects.Particles.ParticleEmitter;
+  private materialized = false;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    super(scene, x, y, 'starkid');
+    scene.add.existing(this);
+    scene.physics.add.existing(this, true);
+    this.setDepth(15);
+    this.setAlpha(0);
+    this.setScale(1.5);
+
+    const body = this.body as Phaser.Physics.Arcade.StaticBody;
+    body.setCircle(24, 0, 8);
+
+    this.glowSprite = scene.add.sprite(x, y, 'starkid');
+    this.glowSprite.setScale(3);
+    this.glowSprite.setAlpha(0);
+    this.glowSprite.setBlendMode(Phaser.BlendModes.ADD);
+    this.glowSprite.setDepth(14);
+
+    this.auraParticles = scene.add.particles(x, y, 'particle', {
+      speed: { min: 10, max: 40 },
+      scale: { start: 0.8, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      lifespan: 1500,
+      frequency: 80,
+      blendMode: 'ADD',
+      tint: [0xff3333, 0xff8833, 0xffdd33, 0x33ff66, 0x3388ff, 0x5533ff, 0xcc33ff],
+      emitting: false,
+    });
+    this.auraParticles.setDepth(13);
+  }
+
+  materialize(): void {
+    if (this.materialized) return;
+    this.materialized = true;
+
+    this.auraParticles.emitting = true;
+
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 1,
+      duration: 3000,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.scene.tweens.add({
+      targets: this.glowSprite,
+      alpha: 0.3,
+      duration: 3000,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  update(time: number): void {
+    if (!this.materialized) return;
+    const t = time / 1000;
+    const float = Math.sin(t * 0.8) * 5;
+    this.y = this.y + float * 0.02;
+    this.glowSprite.setPosition(this.x, this.y);
+
+    const pulse = 2.5 + 0.5 * Math.sin(t * 1.2);
+    this.glowSprite.setScale(pulse);
+    this.glowSprite.setAlpha(0.15 + 0.1 * Math.sin(t * 0.9));
+  }
+}
