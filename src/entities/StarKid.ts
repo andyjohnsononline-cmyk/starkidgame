@@ -58,6 +58,12 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  elevateDepth(baseDepth: number): void {
+    this.setDepth(baseDepth + 2);
+    this.glowSprite.setDepth(baseDepth + 1);
+    this.auraParticles.setDepth(baseDepth);
+  }
+
   update(time: number): void {
     if (!this.materialized) return;
     const t = time / 1000;

@@ -9,7 +9,7 @@ import { Star } from '../entities/Star';
 import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor } from '../utils/colors';
 import { audioManager } from '../systems/AudioManager';
 
-const CHEAT_SEQUENCE = ['S', 'T', 'A', 'R', 'S'];
+const CHEAT_SEQUENCES = ['STARS', 'STARKID'];
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private starkidReady = false;
   private audioInitialized = false;
   private cheatBuffer: string[] = [];
+  private cheatResetTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -87,14 +88,24 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', dismissHint);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (!/^[a-zA-Z]$/.test(event.key)) return;
+
+      if (this.cheatResetTimer) clearTimeout(this.cheatResetTimer);
+      this.cheatResetTimer = setTimeout(() => { this.cheatBuffer.length = 0; }, 2000);
+
       this.cheatBuffer.push(event.key.toUpperCase());
-      if (this.cheatBuffer.length > CHEAT_SEQUENCE.length) {
+      const maxLen = Math.max(...CHEAT_SEQUENCES.map(s => s.length));
+      if (this.cheatBuffer.length > maxLen) {
         this.cheatBuffer.shift();
       }
-      if (this.cheatBuffer.length === CHEAT_SEQUENCE.length &&
-          this.cheatBuffer.every((k, i) => k === CHEAT_SEQUENCE[i])) {
-        this.cheatBuffer.length = 0;
-        this.cheatCollectAll();
+
+      const typed = this.cheatBuffer.join('');
+      for (const seq of CHEAT_SEQUENCES) {
+        if (typed.endsWith(seq)) {
+          this.cheatBuffer.length = 0;
+          this.cheatCollectAll();
+          break;
+        }
       }
     });
   }
@@ -208,9 +219,33 @@ export class GameScene extends Phaser.Scene {
       () => {
         if (!this.starkidReady) return;
         this.starkidReady = false;
-        this.cameras.main.fadeOut(2000, 255, 255, 255);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('WinScene');
+
+        const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
+        body.setAcceleration(0, 0);
+        body.setVelocity(0, 0);
+        body.setImmovable(true);
+
+        const blackOverlay = this.add.graphics();
+        blackOverlay.setDepth(500);
+        blackOverlay.setScrollFactor(0);
+        blackOverlay.fillStyle(0x000000, 1);
+        blackOverlay.fillRect(0, 0, 1024, 768);
+        blackOverlay.setAlpha(0);
+
+        this.starkid!.elevateDepth(501);
+        this.player.sprite.setDepth(504);
+
+        this.tweens.add({
+          targets: blackOverlay,
+          alpha: 1,
+          duration: 2000,
+          ease: 'Sine.easeInOut',
+          onComplete: () => {
+            this.cameras.main.fadeOut(1500, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+              this.scene.start('WinScene');
+            });
+          },
         });
       },
     );
