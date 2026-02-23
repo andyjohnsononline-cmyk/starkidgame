@@ -1,17 +1,26 @@
 import Phaser from 'phaser';
 import { WORLD_WIDTH, WORLD_HEIGHT } from '../utils/colors';
 
+interface TwinkleStar {
+  sprite: Phaser.GameObjects.Arc;
+  baseAlpha: number;
+  speed: number;
+  phase: number;
+}
+
 export class ParallaxBackground {
   private scene: Phaser.Scene;
   private starFieldImage: Phaser.GameObjects.Image;
   private nebulaSprites: Phaser.GameObjects.Image[] = [];
   private geometricShapes: Phaser.GameObjects.Image;
+  private twinkleStars: TwinkleStar[] = [];
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.starFieldImage = this.createStarField();
     this.geometricShapes = this.createGeometricLayer();
     this.createNebulaClouds();
+    this.createTwinkleStars();
   }
 
   private createStarField(): Phaser.GameObjects.Image {
@@ -128,7 +137,35 @@ export class ParallaxBackground {
     }
   }
 
-  update(_time: number, _camera: Phaser.Cameras.Scene2D.Camera): void {
-    // Parallax is handled via scrollFactor; no per-frame work needed
+  private createTwinkleStars(): void {
+    const tints = [0xffffff, 0xccddff, 0xffeedd, 0xddddff];
+    for (let i = 0; i < 30; i++) {
+      const x = Math.random() * WORLD_WIDTH;
+      const y = Math.random() * WORLD_HEIGHT;
+      const radius = 1 + Math.random() * 1.5;
+      const baseAlpha = 0.4 + Math.random() * 0.5;
+      const tint = tints[Math.floor(Math.random() * tints.length)];
+
+      const sprite = this.scene.add.circle(x, y, radius, tint, baseAlpha);
+      sprite.setDepth(-98);
+      sprite.setScrollFactor(0.35);
+      sprite.setBlendMode(Phaser.BlendModes.ADD);
+
+      this.twinkleStars.push({
+        sprite,
+        baseAlpha,
+        speed: 0.5 + Math.random() * 2,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  update(time: number, _camera: Phaser.Cameras.Scene2D.Camera): void {
+    const t = time / 1000;
+    for (const star of this.twinkleStars) {
+      const flicker = Math.sin(t * star.speed + star.phase);
+      const alpha = star.baseAlpha * (0.3 + 0.7 * ((flicker + 1) / 2));
+      star.sprite.setAlpha(alpha);
+    }
   }
 }

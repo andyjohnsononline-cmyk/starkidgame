@@ -9,6 +9,7 @@ export class SpectrumHUD {
   private completed: Set<StarColor> = new Set();
   private bloomed = false;
   private bloomOverlay: Phaser.GameObjects.Graphics;
+  private totalText!: Phaser.GameObjects.Text;
 
   private readonly segWidth = 100;
   private readonly segHeight = 28;
@@ -68,6 +69,16 @@ export class SpectrumHUD {
 
       this.segments.set(cfg.color, { bg, fill, text });
     });
+
+    this.totalText = this.scene.add.text(1024 / 2, 768 - this.segHeight - 32, '0 / 70 stars', {
+      fontSize: '11px',
+      fontFamily: 'monospace',
+      color: '#8899aa',
+      align: 'center',
+    });
+    this.totalText.setOrigin(0.5);
+    this.totalText.setAlpha(0.7);
+    this.container.add(this.totalText);
   }
 
   addStar(color: StarColor): { count: number; justCompleted: boolean; allComplete: boolean } {
@@ -81,6 +92,7 @@ export class SpectrumHUD {
     }
 
     this.updateSegment(color);
+    this.updateTotalText();
 
     const allComplete = this.completed.size === STAR_COLORS.length;
     if (allComplete && !this.bloomed) {
@@ -112,6 +124,19 @@ export class SpectrumHUD {
     }
 
     seg.text.setText(`${Math.min(count, REQUIRED_PER_COLOR)}/${REQUIRED_PER_COLOR}`);
+  }
+
+  private updateTotalText(): void {
+    let total = 0;
+    for (const cfg of STAR_COLORS) {
+      total += Math.min(this.collected.get(cfg.color) || 0, REQUIRED_PER_COLOR);
+    }
+    const max = REQUIRED_PER_COLOR * STAR_COLORS.length;
+    this.totalText.setText(`${total} / ${max} stars`);
+    if (total === max) {
+      this.totalText.setColor('#ffd700');
+      this.totalText.setAlpha(1);
+    }
   }
 
   private pulseSegment(color: StarColor): void {
@@ -188,6 +213,7 @@ export class SpectrumHUD {
         this.pulseSegment(cfg.color);
       }
     }
+    this.updateTotalText();
     if (!this.bloomed && this.completed.size === STAR_COLORS.length) {
       this.bloom();
     }

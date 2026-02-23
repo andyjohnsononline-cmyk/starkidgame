@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { WORLD_WIDTH, WORLD_HEIGHT } from '../utils/colors';
+import { audioManager } from '../systems/AudioManager';
 
 const ACCELERATION = 280;
 const MAX_SPEED = 220;
@@ -12,7 +13,11 @@ export class Player {
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private moveTarget: Phaser.Math.Vector2 | null = null;
   private exhaust: Phaser.GameObjects.Particles.ParticleEmitter;
+  private trail: Phaser.GameObjects.Particles.ParticleEmitter;
   private stunTimer = 0;
+  private jetpackSoundCooldown = 0;
+  private wasThrusting = false;
+  private disoriented = false;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -54,11 +59,32 @@ export class Player {
       emitting: false,
     });
     this.exhaust.setDepth(9);
+
+    this.trail = scene.add.particles(0, 0, 'particle', {
+      speed: { min: 2, max: 8 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 0.25, end: 0 },
+      lifespan: 400,
+      frequency: 30,
+      tint: 0x8899bb,
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    this.trail.setDepth(8);
   }
 
   stun(duration: number): void {
     this.stunTimer = duration;
     this.sprite.setTint(0xff8888);
+  }
+
+  setDisoriented(value: boolean): void {
+    this.disoriented = value;
+    if (value) {
+      this.sprite.setMaxVelocity(MAX_SPEED * 0.5);
+    } else {
+      this.sprite.setMaxVelocity(MAX_SPEED);
+    }
   }
 
   update(delta: number): void {
@@ -105,15 +131,24 @@ export class Player {
     const isThrusting = ax !== 0 || ay !== 0;
     this.updateExhaust(isThrusting);
 
+    this.jetpackSoundCooldown = Math.max(0, this.jetpackSoundCooldown - delta / 1000);
+    if (isThrusting && !this.wasThrusting && this.jetpackSoundCooldown <= 0) {
+      audioManager.playJetpackBurst();
+      this.jetpackSoundCooldown = 0.15;
+    }
+    this.wasThrusting = isThrusting;
+
     if (ax !== 0) {
       this.sprite.setFlipX(ax < 0);
     }
   }
 
   private updateExhaust(active: boolean): void {
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    const speed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+
     if (active) {
       this.exhaust.emitting = true;
-      const body = this.sprite.body as Phaser.Physics.Arcade.Body;
       const angle = Math.atan2(body.velocity.y, body.velocity.x);
       this.exhaust.setPosition(
         this.sprite.x - Math.cos(angle) * 32,
@@ -121,6 +156,15 @@ export class Player {
       );
     } else {
       this.exhaust.emitting = false;
+    }
+
+    const trailThreshold = MAX_SPEED * 0.45;
+    if (speed > trailThreshold) {
+      this.trail.emitting = true;
+      this.trail.setPosition(this.sprite.x, this.sprite.y);
+      this.trail.setParticleAlpha({ start: 0.15 + 0.15 * (speed / MAX_SPEED), end: 0 });
+    } else {
+      this.trail.emitting = false;
     }
   }
 }

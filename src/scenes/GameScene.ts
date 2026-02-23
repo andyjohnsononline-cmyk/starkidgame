@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
   private spectrumHUD!: SpectrumHUD;
   private starkid: StarKid | null = null;
   private starkidArrow: Phaser.GameObjects.Graphics | null = null;
+  private starkidArrowLabel: Phaser.GameObjects.Text | null = null;
   private totalCollected = 0;
   private spectrumComplete = false;
   private starkidReady = false;
@@ -40,7 +41,10 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.startFollow(this.player.sprite, true, 0.08, 0.08);
+    this.cameras.main.setDeadzone(80, 60);
     this.cameras.main.fadeIn(1500, 0, 0, 0);
+
+    this.createVignette();
 
     this.setupStarCollection();
     this.hazardManager.setupCollisions(this.player);
@@ -151,6 +155,24 @@ export class GameScene extends Phaser.Scene {
     });
     emitter.explode(12);
     this.time.delayedCall(600, () => emitter.destroy());
+
+    const ring = this.add.graphics();
+    ring.setDepth(6);
+    this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 400,
+      ease: 'Sine.easeOut',
+      onUpdate: (tween: Phaser.Tweens.Tween) => {
+        const v = tween.getValue() ?? 0;
+        ring.clear();
+        const radius = 10 + v * 50;
+        const alpha = 0.6 * (1 - v);
+        ring.lineStyle(2 - v * 1.5, cfg.hex, alpha);
+        ring.strokeCircle(x, y, radius);
+      },
+      onComplete: () => ring.destroy(),
+    });
   }
 
   private onSpectrumComplete(): void {
@@ -211,20 +233,52 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     this.player.update(delta);
-    this.starSpawner.update(time);
-    this.hazardManager.update(this.player);
+    this.starSpawner.update(time, this.player.sprite.x, this.player.sprite.y);
+    this.hazardManager.update(this.player, delta);
     this.parallaxBg.update(time, this.cameras.main);
     this.starkid?.update(time);
     this.updateStarKidArrow(time);
   }
 
+  private createVignette(): void {
+    const w = 1024, h = 768;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.7);
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.6, 'rgba(0,0,0,0)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+    this.textures.addCanvas('vignette', canvas);
+    const img = this.add.image(w / 2, h / 2, 'vignette');
+    img.setScrollFactor(0);
+    img.setDepth(95);
+  }
+
   private updateStarKidArrow(time: number): void {
-    if (!this.starkid || !this.starkidReady) return;
+    if (!this.starkid || !this.starkidReady) {
+      if (this.starkidArrowLabel) this.starkidArrowLabel.setAlpha(0);
+      return;
+    }
 
     if (!this.starkidArrow) {
       this.starkidArrow = this.add.graphics();
       this.starkidArrow.setDepth(50);
       this.starkidArrow.setScrollFactor(0);
+    }
+    if (!this.starkidArrowLabel) {
+      this.starkidArrowLabel = this.add.text(0, 0, 'Find StarKid', {
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        color: '#ffd700',
+        align: 'center',
+      });
+      this.starkidArrowLabel.setOrigin(0.5);
+      this.starkidArrowLabel.setDepth(50);
+      this.starkidArrowLabel.setScrollFactor(0);
     }
 
     this.starkidArrow.clear();
@@ -232,31 +286,54 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const sx = this.starkid.x - cam.scrollX;
     const sy = this.starkid.y - cam.scrollY;
+    const margin = 50;
 
-    // Only show arrow if StarKid is off-screen or far away
-    if (sx >= 0 && sx <= cam.width && sy >= 0 && sy <= cam.height) return;
+    if (sx >= margin && sx <= cam.width - margin && sy >= margin && sy <= cam.height - margin) {
+      this.starkidArrowLabel.setAlpha(0);
+      return;
+    }
 
     const cx = cam.width / 2;
     const cy = cam.height / 2;
     const angle = Math.atan2(sy - cy, sx - cx);
 
-    const arrowDist = 80;
-    const ax = cx + Math.cos(angle) * arrowDist;
-    const ay = cy + Math.sin(angle) * arrowDist;
+    const edgePadding = 40;
+    const maxX = cam.width - edgePadding;
+    const maxY = cam.height - edgePadding;
+
+    let ax: number, ay: number;
+    const slope = Math.tan(angle);
+    const cosAngle = Math.cos(angle);
+    const sinAngle = Math.sin(angle);
+
+    if (Math.abs(cosAngle) * maxY > Math.abs(sinAngle) * maxX) {
+      ax = cosAngle > 0 ? maxX : edgePadding;
+      ay = cy + (ax - cx) * slope;
+      ay = Phaser.Math.Clamp(ay, edgePadding, maxY);
+    } else {
+      ay = sinAngle > 0 ? maxY : edgePadding;
+      ax = cx + (ay - cy) / slope;
+      ax = Phaser.Math.Clamp(ax, edgePadding, maxX);
+    }
 
     const t = time / 1000;
     const pulse = 0.6 + 0.4 * Math.sin(t * 3);
 
-    this.starkidArrow.fillStyle(0xffffcc, pulse * 0.8);
+    this.starkidArrow.fillStyle(0xffd700, pulse * 0.9);
     this.starkidArrow.beginPath();
-    const tipX = ax + Math.cos(angle) * 12;
-    const tipY = ay + Math.sin(angle) * 12;
-    const baseL = angle + Math.PI * 0.85;
-    const baseR = angle - Math.PI * 0.85;
+    const tipX = ax + Math.cos(angle) * 16;
+    const tipY = ay + Math.sin(angle) * 16;
+    const baseL = angle + Math.PI * 0.8;
+    const baseR = angle - Math.PI * 0.8;
     this.starkidArrow.moveTo(tipX, tipY);
-    this.starkidArrow.lineTo(ax + Math.cos(baseL) * 8, ay + Math.sin(baseL) * 8);
-    this.starkidArrow.lineTo(ax + Math.cos(baseR) * 8, ay + Math.sin(baseR) * 8);
+    this.starkidArrow.lineTo(ax + Math.cos(baseL) * 10, ay + Math.sin(baseL) * 10);
+    this.starkidArrow.lineTo(ax + Math.cos(baseR) * 10, ay + Math.sin(baseR) * 10);
     this.starkidArrow.closePath();
     this.starkidArrow.fillPath();
+
+    const labelOffsetX = -Math.cos(angle) * 22;
+    const labelOffsetY = -Math.sin(angle) * 22;
+    this.starkidArrowLabel.setPosition(ax + labelOffsetX, ay + labelOffsetY);
+    this.starkidArrowLabel.setAlpha(pulse * 0.7);
   }
 }

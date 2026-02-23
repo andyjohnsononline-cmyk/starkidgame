@@ -16,6 +16,8 @@ export class AudioManager {
   private lfoNode: OscillatorNode | null = null;
   private arpInterval: ReturnType<typeof setInterval> | null = null;
   private reverbConvolver: ConvolverNode | null = null;
+  private blackHoleOsc: OscillatorNode | null = null;
+  private blackHoleGain: GainNode | null = null;
 
   init(): void {
     if (this.initialized) return;
@@ -102,33 +104,42 @@ export class AudioManager {
     const notes = [130.81, 164.81, 196, 261.63, 196, 164.81];
     let noteIdx = 0;
 
-    this.arpInterval = setInterval(() => {
-      if (!this.ctx || !this.masterGain || this.spectrumProgress < 0.15) return;
-      const now = this.ctx.currentTime;
-      const volume = 0.015 * Math.min(this.spectrumProgress * 2, 1);
+    const scheduleNext = () => {
+      const baseDelay = 4000 - this.spectrumProgress * 2500;
+      const jitter = (0.5 + Math.random()) * 500;
+      const delay = Math.max(800, baseDelay + jitter);
+      this.arpInterval = setTimeout(() => {
+        if (!this.ctx || !this.masterGain) return;
+        if (this.spectrumProgress >= 0.15) {
+          const now = this.ctx.currentTime;
+          const volume = 0.015 * Math.min(this.spectrumProgress * 2, 1);
 
-      const osc = this.ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = notes[noteIdx % notes.length];
-      noteIdx++;
+          const osc = this.ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = notes[noteIdx % notes.length];
+          noteIdx++;
 
-      const gain = this.ctx.createGain();
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(volume, now + 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(volume, now + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
 
-      osc.connect(gain);
-      if (this.reverbConvolver) {
-        const reverbSend = this.ctx.createGain();
-        reverbSend.gain.value = 0.3;
-        gain.connect(reverbSend);
-        reverbSend.connect(this.reverbConvolver);
-        this.reverbConvolver.connect(this.masterGain);
-      }
-      gain.connect(this.masterGain);
-      osc.start(now);
-      osc.stop(now + 2.5);
-    }, 3000 + Math.random() * 2000);
+          osc.connect(gain);
+          if (this.reverbConvolver) {
+            const reverbSend = this.ctx.createGain();
+            reverbSend.gain.value = 0.3;
+            gain.connect(reverbSend);
+            reverbSend.connect(this.reverbConvolver);
+            this.reverbConvolver.connect(this.masterGain);
+          }
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 2.5);
+        }
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
   }
 
   playStarCollect(color: StarColor): void {
@@ -306,6 +317,38 @@ export class AudioManager {
       this.lfoNode.frequency.linearRampToValueAtTime(
         0.15 + this.spectrumProgress * 0.1, now + 1,
       );
+    }
+  }
+
+  updateBlackHoleProximity(closestDistance: number, pullRadius: number): void {
+    if (!this.ctx || !this.masterGain) return;
+
+    if (!this.blackHoleOsc) {
+      this.blackHoleOsc = this.ctx.createOscillator();
+      this.blackHoleOsc.type = 'sine';
+      this.blackHoleOsc.frequency.value = 40;
+      this.blackHoleGain = this.ctx.createGain();
+      this.blackHoleGain.gain.value = 0;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 80;
+      filter.Q.value = 8;
+
+      this.blackHoleOsc.connect(filter);
+      filter.connect(this.blackHoleGain);
+      this.blackHoleGain.connect(this.masterGain);
+      this.blackHoleOsc.start();
+    }
+
+    if (!this.blackHoleGain) return;
+    const now = this.ctx.currentTime;
+    if (closestDistance < pullRadius) {
+      const intensity = Math.pow(1 - closestDistance / pullRadius, 2);
+      this.blackHoleGain.gain.linearRampToValueAtTime(intensity * 0.12, now + 0.1);
+      this.blackHoleOsc!.frequency.linearRampToValueAtTime(35 + intensity * 25, now + 0.1);
+    } else {
+      this.blackHoleGain.gain.linearRampToValueAtTime(0, now + 0.3);
     }
   }
 

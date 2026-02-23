@@ -51,6 +51,13 @@ export class Star extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  nudge(dx: number, dy: number): void {
+    this.x += dx;
+    this.baseY += dy;
+    const body = this.body as Phaser.Physics.Arcade.StaticBody;
+    if (body) body.updateFromGameObject();
+  }
+
   collect(): void {
     if (this.glowSprite) {
       this.glowSprite.destroy();

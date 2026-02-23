@@ -5,6 +5,7 @@ import { NebulaFog } from '../hazards/NebulaFog';
 import { SolarFlare } from '../hazards/SolarFlare';
 import { Player } from '../entities/Player';
 import { WORLD_WIDTH, WORLD_HEIGHT } from '../utils/colors';
+import { audioManager } from './AudioManager';
 
 export class HazardManager {
   private scene: Phaser.Scene;
@@ -39,16 +40,31 @@ export class HazardManager {
     this.solarFlare = new SolarFlare(scene);
   }
 
-  update(player: Player): void {
+  private wasDisorienting = false;
+
+  update(player: Player, delta: number): void {
     const body = player.sprite.body as Phaser.Physics.Arcade.Body;
 
+    let closestBhDist = Infinity;
     for (const bh of this.blackHoles) {
-      bh.applyGravity(body);
+      bh.applyGravity(body, delta);
+      const dx = bh.x - player.sprite.x;
+      const dy = bh.y - player.sprite.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < closestBhDist) closestBhDist = dist;
     }
+    audioManager.updateBlackHoleProximity(closestBhDist, 200);
 
     for (const nf of this.nebulaFogs) {
       nf.update(player.sprite.x, player.sprite.y);
     }
+
+    if (this.solarFlare.isDisorienting && !this.wasDisorienting) {
+      player.setDisoriented(true);
+    } else if (!this.solarFlare.isDisorienting && this.wasDisorienting) {
+      player.setDisoriented(false);
+    }
+    this.wasDisorienting = this.solarFlare.isDisorienting;
   }
 
   setupCollisions(player: Player): void {
