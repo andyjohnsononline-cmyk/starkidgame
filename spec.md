@@ -1,5 +1,5 @@
 # ⭐ StarKid — Game Design Specification
-**Version 1.1 | Web Browser Game**
+**Version 1.2 | Web Browser Game**
 
 ---
 
@@ -21,7 +21,9 @@ When the player has collected **10 of every color** (70 stars total), StarKid ap
 
 ## Player Character
 
-**The Astronaut Kid** is a normal kid in a homemade spacesuit assembled from scrap metal and salvaged tech — mismatched panels, rivets, glowing gauges, a round helmet with a cracked visor. One tuft of hair pokes out through a gap in the helmet. On their back: a jetpack, also clearly improvised, with little bursts of flame or exhaust when they move. Scrappy, endearing, unmistakably a kid who built this thing themselves and flew into the stars anyway.
+**The Astronaut Kid** is a normal kid in a homemade spacesuit assembled from scrap metal and salvaged tech — mismatched panels, rivets, glowing gauges, a round helmet with goggles perched on top. On their back: a jetpack with exposed gears and tubing, also clearly improvised, with little bursts of flame or exhaust when they move. Scrappy, endearing, unmistakably a kid who built this thing themselves and flew into the stars anyway.
+
+The astronaut uses a custom hand-drawn sprite (`public/assets/astronaut.png`, 64x96px) rendered in a warm sepia-toned illustration style with visible pen strokes and cross-hatching. The sprite has a transparent background and is loaded at boot, overriding the programmatic fallback texture.
 
 ---
 
@@ -123,6 +125,16 @@ The overall palette is dark with vivid pops of color from the rainbow stars and 
 
 Sprites support both programmatic generation (fallback) and external image assets. Image files placed in `public/assets/` are loaded at boot and take priority over programmatic textures. This allows incremental replacement of generated sprites with hand-crafted artwork.
 
+| Sprite | Status | Source |
+|---|---|---|
+| Astronaut (player) | Custom asset | `public/assets/astronaut.png` (64x96px, hand-drawn illustration) |
+| StarKid | Programmatic | Generated at boot (`src/utils/sprites.ts`) |
+| Stars (7 colors) | Programmatic | Generated at boot |
+| Asteroids (sm/md/lg) | Programmatic | Generated at boot |
+| Black hole | Programmatic | Generated at boot |
+| Nebula | Programmatic | Generated at boot |
+| Particles / Exhaust | Programmatic | Generated at boot |
+
 ---
 
 ## Audio
@@ -170,7 +182,7 @@ A debug cheat code allows instant collection of all stars for testing purposes. 
 | World | Single scrolling space map |
 | Goal | Collect 10 of each of 7 rainbow star colors |
 | Obstacles | Environmental hazards only |
-| Win state | Rescue and reunite with StarKid |
+| Win state | Reach StarKid |
 | Pressure | None — relaxed exploration |
 | Visual style | Minimalist clean + irregular geometric shapes + nebula clouds |
 | Character | Steampunk scrap-metal child astronaut |
