@@ -1,9 +1,22 @@
-import { askStarKid } from '../api/claude';
 import { findEasterEgg } from '../utils/easterEggs';
+
+const STARKID_ANSWERS: string[] = [
+  'The universe doesn\'t keep secrets — it just waits for someone curious enough to look. You looked. That\'s the whole answer.',
+  'Every star you collected was already inside you. You just needed the journey to remember where you put them.',
+  'The bravest thing you can do is be exactly who you are, even when the universe feels too big for it. Especially then.',
+  'You didn\'t fly all this way to find me. You flew all this way to find out that you could. And you can. You always could.',
+  'There is no wrong question and no wrong path. Every direction you choose becomes the right one the moment you take the first step.',
+  'The light you see in the stars? That\'s the same light in you. Distance doesn\'t dim it — it just makes it harder to notice. But it\'s there.',
+  'Some things can\'t be taught. They can only be discovered. And you just discovered something most people spend their whole lives looking for.',
+  'The darkness between the stars isn\'t empty. It\'s full of possibilities that haven\'t chosen their shape yet. Just like you.',
+  'You built a spacesuit out of scraps and flew into the unknown. That\'s not recklessness — that\'s faith. And faith is just courage that learned to fly.',
+  'The answer to your question has been traveling toward you at the speed of light since before you were born. You just had to be here to catch it.',
+];
 
 export class QuestionUI {
   private container: HTMLDivElement;
   private onComplete: () => void;
+  private answerIndex = Math.floor(Math.random() * STARKID_ANSWERS.length);
 
   constructor(onComplete: () => void) {
     this.onComplete = onComplete;
@@ -23,6 +36,7 @@ export class QuestionUI {
       pointerEvents: 'all',
       opacity: '0',
       transition: 'opacity 1.5s ease-in-out',
+      background: 'radial-gradient(ellipse at center, rgba(10,5,20,0.85) 0%, rgba(5,5,16,0.95) 100%)',
     });
 
     document.getElementById('game-container')!.appendChild(this.container);
@@ -34,7 +48,7 @@ export class QuestionUI {
   private showPrompt(): void {
     this.container.innerHTML = `
       <div style="text-align: center; max-width: 600px; padding: 40px;">
-        <p style="color: #eeddcc; font-family: Georgia, serif; font-size: 22px; font-style: italic; margin-bottom: 40px; line-height: 1.6; text-shadow: 0 0 20px rgba(255,200,100,0.3);">
+        <p style="color: #ffeedd; font-family: Georgia, serif; font-size: 24px; font-style: italic; margin-bottom: 40px; line-height: 1.6; text-shadow: 0 0 30px rgba(255,215,100,0.5), 0 0 60px rgba(255,200,100,0.2);">
           "You've found StarKid. You may ask him one question."
         </p>
         <div style="position: relative;">
@@ -71,6 +85,11 @@ export class QuestionUI {
 
     input.focus();
 
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') submit();
+    });
+
     const submit = () => {
       const question = input.value.trim();
       if (!question) return;
@@ -81,18 +100,16 @@ export class QuestionUI {
     };
 
     button.addEventListener('click', submit);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submit();
-    });
   }
 
-  private async submitQuestion(question: string): Promise<void> {
+  private submitQuestion(question: string): void {
     const easterEgg = findEasterEgg(question);
     if (easterEgg) {
       this.showAnswer(easterEgg);
       return;
     }
-    const answer = await askStarKid(question);
+    const answer = STARKID_ANSWERS[this.answerIndex];
+    this.answerIndex = (this.answerIndex + 1) % STARKID_ANSWERS.length;
     this.showAnswer(answer);
   }
 
