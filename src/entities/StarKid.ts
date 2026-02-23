@@ -13,13 +13,13 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this, true);
     this.setDepth(15);
     this.setAlpha(0);
-    this.setScale(1.5);
+    this.setScale(0.09);
 
     const body = this.body as Phaser.Physics.Arcade.StaticBody;
-    body.setCircle(24, 0, 8);
+    body.setCircle(400, 35, 120);
 
     this.glowSprite = scene.add.sprite(x, y, 'starkid');
-    this.glowSprite.setScale(3);
+    this.glowSprite.setScale(0.18);
     this.glowSprite.setAlpha(0);
     this.glowSprite.setBlendMode(Phaser.BlendModes.ADD);
     this.glowSprite.setDepth(14);
@@ -66,7 +66,7 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
     this.glowSprite.setPosition(this.x, this.y);
     this.auraParticles.setPosition(this.x, this.y);
 
-    const pulse = 2.5 + 0.5 * Math.sin(t * 1.2);
+    const pulse = 0.15 + 0.04 * Math.sin(t * 1.2);
     this.glowSprite.setScale(pulse);
     this.glowSprite.setAlpha(0.15 + 0.1 * Math.sin(t * 0.9));
   }

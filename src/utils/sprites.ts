@@ -4,14 +4,41 @@ import { STAR_COLORS } from './colors';
 export function generateAllTextures(scene: Phaser.Scene): void {
   const has = (key: string) => scene.textures.exists(key) && scene.textures.get(key).key !== '__MISSING';
 
-  if (!has('astronaut')) generateAstronautTexture(scene);
+  if (has('astronaut')) removeWhiteBackground(scene, 'astronaut');
+  else generateAstronautTexture(scene);
+
+  if (has('starkid')) removeWhiteBackground(scene, 'starkid');
+  else generateStarKidTexture(scene);
+
   if (!has('star_red')) generateStarTextures(scene);
-  if (!has('starkid')) generateStarKidTexture(scene);
   if (!has('asteroid_sm')) generateAsteroidTextures(scene);
   if (!has('blackhole')) generateBlackHoleTexture(scene);
   if (!has('nebula')) generateNebulaTexture(scene);
   if (!has('particle')) generateParticleTexture(scene);
   if (!has('exhaust')) generateExhaustTexture(scene);
+}
+
+function removeWhiteBackground(scene: Phaser.Scene, key: string): void {
+  const source = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(source, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = imageData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const brightness = (r + g + b) / 3;
+    if (brightness > 240) {
+      d[i + 3] = 0;
+    } else if (brightness > 220) {
+      d[i + 3] = Math.round(((240 - brightness) / 20) * 255);
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+  scene.textures.remove(key);
+  scene.textures.addCanvas(key, canvas);
 }
 
 function generateAstronautTexture(scene: Phaser.Scene): void {
@@ -270,13 +297,13 @@ function generateNebulaTexture(scene: Phaser.Scene): void {
   const size = 256;
 
   const blobs = [
-    { x: 100, y: 120, r: 80, color: 0x6633aa, alpha: 0.06, verts: 7 },
-    { x: 140, y: 100, r: 70, color: 0x4466cc, alpha: 0.05, verts: 6 },
-    { x: 160, y: 150, r: 90, color: 0x8844aa, alpha: 0.06, verts: 8 },
-    { x: 110, y: 160, r: 60, color: 0x5555bb, alpha: 0.04, verts: 5 },
-    { x: 130, y: 130, r: 100, color: 0x7744bb, alpha: 0.07, verts: 9 },
-    { x: 80, y: 140, r: 65, color: 0x9944aa, alpha: 0.05, verts: 6 },
-    { x: 170, y: 120, r: 55, color: 0x3355cc, alpha: 0.04, verts: 7 },
+    { x: 100, y: 120, r: 80, color: 0xaa33cc, alpha: 0.15, verts: 9 },
+    { x: 140, y: 100, r: 70, color: 0x4455dd, alpha: 0.12, verts: 7 },
+    { x: 160, y: 150, r: 90, color: 0xcc44aa, alpha: 0.18, verts: 8 },
+    { x: 110, y: 160, r: 60, color: 0x3388aa, alpha: 0.10, verts: 6 },
+    { x: 130, y: 130, r: 100, color: 0x7733cc, alpha: 0.20, verts: 10 },
+    { x: 80, y: 140, r: 65, color: 0xbb55cc, alpha: 0.14, verts: 7 },
+    { x: 170, y: 120, r: 55, color: 0x2266bb, alpha: 0.10, verts: 6 },
   ];
 
   const seed = 42;
