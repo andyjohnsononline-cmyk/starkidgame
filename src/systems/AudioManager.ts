@@ -24,7 +24,7 @@ export class AudioManager {
     try {
       this.ctx = new AudioContext();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.3;
+      this.masterGain.gain.value = 0.6;
       this.masterGain.connect(this.ctx.destination);
       this.reverbConvolver = this.createReverb();
       this.initialized = true;
@@ -95,7 +95,7 @@ export class AudioManager {
     }
 
     this.padGain.gain.setValueAtTime(0, this.ctx.currentTime);
-    this.padGain.gain.linearRampToValueAtTime(0.08, this.ctx.currentTime + 4);
+    this.padGain.gain.linearRampToValueAtTime(0.14, this.ctx.currentTime + 4);
   }
 
   private startArpeggiator(): void {
@@ -112,7 +112,7 @@ export class AudioManager {
         if (!this.ctx || !this.masterGain) return;
         if (this.spectrumProgress >= 0.15) {
           const now = this.ctx.currentTime;
-          const volume = 0.015 * Math.min(this.spectrumProgress * 2, 1);
+          const volume = 0.03 * Math.min(this.spectrumProgress * 2, 1);
 
           const osc = this.ctx.createOscillator();
           osc.type = 'sine';
@@ -233,8 +233,8 @@ export class AudioManager {
 
       const gain = this.ctx.createGain();
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.08, now + 2);
-      gain.gain.linearRampToValueAtTime(0.05, now + 6);
+      gain.gain.linearRampToValueAtTime(0.12, now + 2);
+      gain.gain.linearRampToValueAtTime(0.07, now + 6);
       gain.connect(this.masterGain);
 
       osc.connect(gain);
@@ -247,7 +247,7 @@ export class AudioManager {
     osc5.frequency.value = 130.81;
     const g5 = this.ctx.createGain();
     g5.gain.setValueAtTime(0, now);
-    g5.gain.linearRampToValueAtTime(0.04, now + 3);
+    g5.gain.linearRampToValueAtTime(0.07, now + 3);
     g5.gain.linearRampToValueAtTime(0, now + 8);
     g5.connect(this.masterGain);
     osc5.connect(g5);
@@ -271,8 +271,8 @@ export class AudioManager {
       osc.frequency.value = freq;
 
       const gain = this.ctx.createGain();
-      gain.gain.setValueAtTime(0.03, now);
-      gain.gain.linearRampToValueAtTime(0.03, now + 10);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.linearRampToValueAtTime(0.06, now + 10);
       gain.gain.linearRampToValueAtTime(0, now + 15);
       gain.connect(this.masterGain);
 
@@ -286,7 +286,7 @@ export class AudioManager {
     padOsc.frequency.value = 196;
     const padG = this.ctx.createGain();
     padG.gain.setValueAtTime(0, now);
-    padG.gain.linearRampToValueAtTime(0.02, now + 3);
+    padG.gain.linearRampToValueAtTime(0.04, now + 3);
     padG.gain.linearRampToValueAtTime(0, now + 15);
     padG.connect(this.masterGain);
     padOsc.connect(padG);
@@ -373,7 +373,7 @@ export class AudioManager {
     filter.frequency.value = 400;
 
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.02, now);
+    gain.gain.setValueAtTime(0.05, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     gain.connect(this.masterGain);
 

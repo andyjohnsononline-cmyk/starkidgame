@@ -1,21 +1,29 @@
 import Phaser from 'phaser';
 import { QuestionUI } from '../ui/QuestionUI';
 import { audioManager } from '../systems/AudioManager';
-import { STAR_COLORS } from '../utils/colors';
+
+interface OrbitStar {
+  sprite: Phaser.GameObjects.Image;
+  radius: number;
+  speed: number;
+  phase: number;
+  baseAlpha: number;
+  pulseSpeed: number;
+}
 
 export class WinScene extends Phaser.Scene {
   private questionUI: QuestionUI | null = null;
-  private particles: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
+  private orbitStars: OrbitStar[] = [];
 
   constructor() {
     super({ key: 'WinScene' });
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#050510');
-    this.cameras.main.fadeIn(2000, 5, 5, 16);
+    this.cameras.main.setBackgroundColor('#000000');
+    this.cameras.main.fadeIn(2000, 0, 0, 0);
 
-    this.createColorSwirl();
+    this.createGlowingStars();
     this.createStarKidCenter();
 
     audioManager.playQuestionMoment();
@@ -27,34 +35,69 @@ export class WinScene extends Phaser.Scene {
     });
   }
 
-  private createColorSwirl(): void {
-    const cx = 512, cy = 384;
+  update(time: number): void {
+    const t = time / 1000;
+    const cx = 512, cy = 320;
+    for (const star of this.orbitStars) {
+      const angle = t * star.speed + star.phase;
+      star.sprite.setPosition(
+        cx + Math.cos(angle) * star.radius,
+        cy + Math.sin(angle) * star.radius,
+      );
+      const pulse = star.baseAlpha * (0.5 + 0.5 * Math.sin(t * star.pulseSpeed + star.phase));
+      star.sprite.setAlpha(pulse);
+    }
+  }
 
-    for (const cfg of STAR_COLORS) {
-      const emitter = this.add.particles(cx, cy, 'particle', {
-        speed: { min: 20, max: 60 },
-        scale: { start: 0.5, end: 0 },
-        alpha: { start: 0.5, end: 0 },
-        lifespan: 3000,
-        frequency: 100,
-        tint: cfg.hex,
-        blendMode: 'ADD',
-        angle: { min: 0, max: 360 },
-        rotate: { min: 0, max: 360 },
+  private createGlowingStars(): void {
+    const cx = 512, cy = 320;
+    const tints = [0xffd700, 0xffcc44, 0xffe066, 0xfffacd, 0xffeebb];
+    const starCount = 18;
+
+    for (let i = 0; i < starCount; i++) {
+      const radius = 80 + Math.random() * 160;
+      const speed = 0.15 + Math.random() * 0.35;
+      const phase = (i / starCount) * Math.PI * 2 + Math.random() * 0.5;
+      const baseAlpha = 0.4 + Math.random() * 0.5;
+      const tint = tints[Math.floor(Math.random() * tints.length)];
+
+      const star = this.add.image(cx, cy, 'star');
+      star.setScale(0.3 + Math.random() * 0.5);
+      star.setAlpha(0);
+      star.setTint(tint);
+      star.setBlendMode(Phaser.BlendModes.ADD);
+      star.setDepth(1);
+
+      this.tweens.add({
+        targets: star,
+        alpha: baseAlpha,
+        duration: 2000 + Math.random() * 1000,
+        delay: Math.random() * 500,
+        ease: 'Sine.easeIn',
       });
-      this.particles.push(emitter);
+
+      this.orbitStars.push({
+        sprite: star,
+        radius,
+        speed: speed * (Math.random() > 0.5 ? 1 : -1),
+        phase,
+        baseAlpha,
+        pulseSpeed: 1.5 + Math.random() * 2,
+      });
     }
   }
 
   private createStarKidCenter(): void {
-    const starkid = this.add.sprite(512, 320, 'starkid');
-    starkid.setScale(2.5);
-    starkid.setAlpha(0);
-
     const glow = this.add.sprite(512, 320, 'starkid');
     glow.setScale(4);
     glow.setAlpha(0);
     glow.setBlendMode(Phaser.BlendModes.ADD);
+    glow.setDepth(2);
+
+    const starkid = this.add.sprite(512, 320, 'starkid');
+    starkid.setScale(2.5);
+    starkid.setAlpha(0);
+    starkid.setDepth(3);
 
     this.tweens.add({
       targets: starkid,
@@ -79,7 +122,6 @@ export class WinScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
-    // Gentle float
     this.tweens.add({
       targets: starkid,
       y: { from: 315, to: 325 },
@@ -95,9 +137,10 @@ export class WinScene extends Phaser.Scene {
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.questionUI?.destroy();
 
-      for (const p of this.particles) {
-        p.stop();
+      for (const star of this.orbitStars) {
+        star.sprite.destroy();
       }
+      this.orbitStars = [];
 
       const endText = this.add.text(512, 360, '✦', {
         fontSize: '48px',

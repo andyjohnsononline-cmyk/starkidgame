@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
 const FLARE_INTERVAL = 30000;
-const FLARE_DURATION = 1200;
-const WARNING_TIME = 2000;
+const FLARE_DURATION = 2500;
+const WARNING_TIME = 3500;
 
 export class SolarFlare {
   private scene: Phaser.Scene;
@@ -38,7 +38,7 @@ export class SolarFlare {
 
     this.scene.tweens.add({
       targets: this.overlay,
-      alpha: { from: 0, to: 0.15 },
+      alpha: { from: 0, to: 0.10 },
       duration: WARNING_TIME,
       ease: 'Sine.easeIn',
       onComplete: () => {
@@ -52,7 +52,7 @@ export class SolarFlare {
 
     this.scene.tweens.add({
       targets: this.overlay,
-      alpha: { from: 0.6, to: 0 },
+      alpha: { from: 0.35, to: 0 },
       duration: FLARE_DURATION,
       ease: 'Sine.easeOut',
       onComplete: () => {
@@ -63,7 +63,7 @@ export class SolarFlare {
     });
 
     if (this.scene.cameras.main) {
-      this.scene.cameras.main.shake(400, 0.005);
+      this.scene.cameras.main.shake(300, 0.003);
     }
   }
 
