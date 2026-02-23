@@ -2,14 +2,16 @@ import Phaser from 'phaser';
 import { STAR_COLORS } from './colors';
 
 export function generateAllTextures(scene: Phaser.Scene): void {
-  generateAstronautTexture(scene);
-  generateStarTextures(scene);
-  generateStarKidTexture(scene);
-  generateAsteroidTextures(scene);
-  generateBlackHoleTexture(scene);
-  generateNebulaTexture(scene);
-  generateParticleTexture(scene);
-  generateExhaustTexture(scene);
+  const has = (key: string) => scene.textures.exists(key) && scene.textures.get(key).key !== '__MISSING';
+
+  if (!has('astronaut')) generateAstronautTexture(scene);
+  if (!has('star_red')) generateStarTextures(scene);
+  if (!has('starkid')) generateStarKidTexture(scene);
+  if (!has('asteroid_sm')) generateAsteroidTextures(scene);
+  if (!has('blackhole')) generateBlackHoleTexture(scene);
+  if (!has('nebula')) generateNebulaTexture(scene);
+  if (!has('particle')) generateParticleTexture(scene);
+  if (!has('exhaust')) generateExhaustTexture(scene);
 }
 
 function generateAstronautTexture(scene: Phaser.Scene): void {
@@ -131,17 +133,17 @@ function generateStarKidTexture(scene: Phaser.Scene): void {
   const w = 48, h = 64;
   const cx = w / 2, cy = h / 2;
 
-  // Rainbow aura (outer glow layers)
-  const auraColors = [0xff3333, 0xff8833, 0xffdd33, 0x33ff66, 0x3388ff, 0x5533ff, 0xcc33ff];
+  // Gold aura (outer glow layers)
+  const auraColors = [0xffd700, 0xffcc00, 0xffaa00, 0xff9900, 0xffe066, 0xffc833, 0xffb700];
   for (let i = auraColors.length - 1; i >= 0; i--) {
     g.fillStyle(auraColors[i], 0.08);
     g.fillCircle(cx, cy, 30 - i * 1.5);
   }
 
-  // Warm glow
-  g.fillStyle(0xffffcc, 0.2);
+  // Warm gold glow
+  g.fillStyle(0xffd700, 0.15);
   g.fillCircle(cx, cy, 22);
-  g.fillStyle(0xffffee, 0.15);
+  g.fillStyle(0xffe566, 0.12);
   g.fillCircle(cx, cy, 18);
 
   // Body silhouette (glowing child form)
@@ -267,20 +269,35 @@ function generateNebulaTexture(scene: Phaser.Scene): void {
   const g = scene.add.graphics();
   const size = 256;
 
-  // Soft overlapping translucent circles to form cloud shape
   const blobs = [
-    { x: 100, y: 120, r: 80, color: 0x6633aa, alpha: 0.06 },
-    { x: 140, y: 100, r: 70, color: 0x4466cc, alpha: 0.05 },
-    { x: 160, y: 150, r: 90, color: 0x8844aa, alpha: 0.06 },
-    { x: 110, y: 160, r: 60, color: 0x5555bb, alpha: 0.04 },
-    { x: 130, y: 130, r: 100, color: 0x7744bb, alpha: 0.07 },
-    { x: 80, y: 140, r: 65, color: 0x9944aa, alpha: 0.05 },
-    { x: 170, y: 120, r: 55, color: 0x3355cc, alpha: 0.04 },
+    { x: 100, y: 120, r: 80, color: 0x6633aa, alpha: 0.06, verts: 7 },
+    { x: 140, y: 100, r: 70, color: 0x4466cc, alpha: 0.05, verts: 6 },
+    { x: 160, y: 150, r: 90, color: 0x8844aa, alpha: 0.06, verts: 8 },
+    { x: 110, y: 160, r: 60, color: 0x5555bb, alpha: 0.04, verts: 5 },
+    { x: 130, y: 130, r: 100, color: 0x7744bb, alpha: 0.07, verts: 9 },
+    { x: 80, y: 140, r: 65, color: 0x9944aa, alpha: 0.05, verts: 6 },
+    { x: 170, y: 120, r: 55, color: 0x3355cc, alpha: 0.04, verts: 7 },
   ];
+
+  const seed = 42;
+  let rng = seed;
+  const seededRandom = () => {
+    rng = (rng * 16807 + 0) % 2147483647;
+    return rng / 2147483647;
+  };
 
   for (const b of blobs) {
     g.fillStyle(b.color, b.alpha);
-    g.fillCircle(b.x, b.y, b.r);
+    const pts: Phaser.Math.Vector2[] = [];
+    for (let v = 0; v < b.verts; v++) {
+      const angle = (v / b.verts) * Math.PI * 2;
+      const wobble = 0.6 + seededRandom() * 0.5;
+      pts.push(new Phaser.Math.Vector2(
+        b.x + Math.cos(angle) * b.r * wobble,
+        b.y + Math.sin(angle) * b.r * wobble,
+      ));
+    }
+    g.fillPoints(pts, true);
   }
 
   g.generateTexture('nebula', size, size);

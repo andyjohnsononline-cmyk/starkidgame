@@ -1,5 +1,5 @@
 # ⭐ StarKid — Game Design Specification
-**Version 1.0 | Web Browser Game**
+**Version 1.1 | Web Browser Game**
 
 ---
 
@@ -87,7 +87,7 @@ Hazards don't kill the player. They slow, push, or impede — maintaining the ca
 When all 70 stars are collected (10 × 7 colors):
 
 1. The spectrum tracker blooms fully — all 7 colors radiant and complete
-2. **StarKid materializes** in the world — not appearing out of nowhere, but becoming *visible*, as if he was always there and you can finally see him. He glows with a warm, full-spectrum light.
+2. **StarKid materializes** in the world — not appearing out of nowhere, but becoming *visible*, as if he was always there and you can finally see him. He glows with a warm, golden light — all gold, not rainbow.
 3. The player flies to StarKid
 4. On contact: a gentle win animation — the two exist together in space, colors swirling softly around them
 5. Then: **the question moment**
@@ -100,33 +100,50 @@ A simple, beautiful input appears:
 
 The player types anything they want. StarKid answers. This is powered by the Claude API — StarKid has a defined voice: wise, warm, a little cosmic, never condescending. He speaks to you like you're already capable of understanding the answer. He exists in his truest form, and for this moment, so do you.
 
+Certain special questions trigger **easter egg responses** — predefined answers that bypass the API and deliver hand-crafted StarKid moments. These are matched by keyword patterns before the API is called.
+
 The answer appears on screen. There is no next level. The game ends here, in this exchange.
 
 ---
 
 ## Visual Style
 
-**Minimalist/clean space aesthetic** with two layered environments:
+**Minimalist/clean space aesthetic** with layered environments featuring irregular, geometric shapes rather than soft circular bokeh:
 
-- **Background layer:** Deep black space with a dense star field (small, white, twinkling background stars for depth)
-- **Mid layer:** Colorful nebula clouds — soft, translucent purples, blues, and pinks that drift slowly and give the world a painterly, alive quality
+- **Background layer:** Deep black space with a mixed star field — small dots, tiny crosses, diamonds, and triangles at varying sizes and brightnesses. Less uniform and circular than traditional bokeh.
+- **Mid layer:** Nebula clouds formed from irregular polygon shapes — organic-geometric forms rather than perfectly circular blobs. Translucent purples, blues, and pinks that drift slowly.
+- **Geometric layer:** Scattered faint geometric shapes (hexagons, triangles, thin diamonds) floating at low alpha with their own parallax depth, adding visual complexity.
 - **Foreground/gameplay layer:** Clean, simple character and star designs — bold outlines, flat colors, minimal detail except on the astronaut character
 
+StarKid's glow is **all gold** — warm golden light, not rainbow. The aura, particles, and glow effects around StarKid use gold shades exclusively.
+
 The overall palette is dark with vivid pops of color from the rainbow stars and nebulae. UI is minimal and never cluttered.
+
+### Sprite Assets
+
+Sprites support both programmatic generation (fallback) and external image assets. Image files placed in `public/assets/` are loaded at boot and take priority over programmatic textures. This allows incremental replacement of generated sprites with hand-crafted artwork.
 
 ---
 
 ## Audio
 
-**Calm orchestral space music** — rooted in strings and woodwinds, with sparse piano. The tone is wonder-filled and unhurried, like a film score for a child looking up at the night sky for the first time. No urgent beats, no synth leads. The orchestration breathes.
+**Rich ambient space music** — a multi-layered synthesized soundscape that evokes strings and warmth. Multiple detuned oscillators create pad-like textures, with slow LFO modulation for organic movement and gentle arpeggiated patterns that evolve over time. The tone is wonder-filled and unhurried.
 
-The music evolves subtly as the spectrum fills — as more colors are collected, the arrangement grows slightly richer, more layered, as if the universe is waking up.
+The music evolves as the spectrum fills — as more colors are collected, new harmonic layers and oscillator voices are added, so the arrangement genuinely grows richer. The universe wakes up with you.
 
 Sound effects are soft and satisfying:
-- Delicate chime/shimmer on star collect, tuned to the color's position in the spectrum
+- Delicate chime/shimmer on star collect with reverb-like resonance, tuned to the color's position in the spectrum
 - Gentle jetpack whoosh on movement
 - Full orchestral swell when StarKid becomes visible
 - A quiet, held chord during the question moment — space for thought
+
+Audio files (`.mp3`/`.ogg`) can be placed in `public/assets/audio/` and loaded at boot for higher-fidelity music when available.
+
+---
+
+## Debug / Cheat Codes
+
+A debug cheat code allows instant collection of all stars for testing purposes. Typing the sequence **S-T-A-R-S** during gameplay fills all 7 spectrum colors to 10/10 and triggers the StarKid appearance, allowing quick access to the win state and question moment.
 
 ---
 
@@ -155,6 +172,7 @@ Sound effects are soft and satisfying:
 | Obstacles | Environmental hazards only |
 | Win state | Rescue and reunite with StarKid |
 | Pressure | None — relaxed exploration |
-| Visual style | Minimalist clean + black space + nebula clouds |
+| Visual style | Minimalist clean + irregular geometric shapes + nebula clouds |
 | Character | Steampunk scrap-metal child astronaut |
-| Audio | Calm ambient space music |
+| Audio | Rich multi-layer ambient space soundscape |
+| Debug | Cheat code (S-T-A-R-S) for instant star collection |

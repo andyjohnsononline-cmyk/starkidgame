@@ -1,4 +1,5 @@
 import { askStarKid } from '../api/claude';
+import { findEasterEgg } from '../utils/easterEggs';
 
 export class QuestionUI {
   private container: HTMLDivElement;
@@ -86,6 +87,11 @@ export class QuestionUI {
   }
 
   private async submitQuestion(question: string): Promise<void> {
+    const easterEgg = findEasterEgg(question);
+    if (easterEgg) {
+      this.showAnswer(easterEgg);
+      return;
+    }
     const answer = await askStarKid(question);
     this.showAnswer(answer);
   }
