@@ -24,8 +24,8 @@ export class Player {
     this.sprite.setCollideWorldBounds(true);
 
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setSize(20, 36);
-    body.setOffset(6, 6);
+    body.setSize(40, 72);
+    body.setOffset(12, 12);
 
     if (scene.input.keyboard) {
       this.cursors = scene.input.keyboard.createCursorKeys();
@@ -116,8 +116,8 @@ export class Player {
       const body = this.sprite.body as Phaser.Physics.Arcade.Body;
       const angle = Math.atan2(body.velocity.y, body.velocity.x);
       this.exhaust.setPosition(
-        this.sprite.x - Math.cos(angle) * 16,
-        this.sprite.y - Math.sin(angle) * 8 + 10,
+        this.sprite.x - Math.cos(angle) * 32,
+        this.sprite.y - Math.sin(angle) * 16 + 20,
       );
     } else {
       this.exhaust.emitting = false;
