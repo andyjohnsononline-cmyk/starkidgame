@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Star } from '../entities/Star';
-import { STAR_COLORS, StarColor, WORLD_WIDTH, WORLD_HEIGHT } from '../utils/colors';
+import { STAR_COLORS, StarColor, WORLD_WIDTH, WORLD_HEIGHT, GOLD_SPAWN_COUNT } from '../utils/colors';
 
 const MARGIN = 150;
 const CLUSTER_SPREAD = 120;
@@ -19,6 +19,15 @@ export class StarSpawner {
   private spawnAll(): void {
     for (const cfg of STAR_COLORS) {
       this.spawnColor(cfg.color, cfg.rarity, cfg.spawnCount);
+    }
+    this.spawnGoldStars();
+  }
+
+  private spawnGoldStars(): void {
+    for (let i = 0; i < GOLD_SPAWN_COUNT; i++) {
+      const x = MARGIN + Math.random() * (WORLD_WIDTH - MARGIN * 2);
+      const y = MARGIN + Math.random() * (WORLD_HEIGHT - MARGIN * 2);
+      this.placeStar(StarColor.Gold, x, y);
     }
   }
 

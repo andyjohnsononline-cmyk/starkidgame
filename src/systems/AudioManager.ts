@@ -45,12 +45,12 @@ export class AudioManager {
     if (!this.ctx) return null;
     const convolver = this.ctx.createConvolver();
     const rate = this.ctx.sampleRate;
-    const length = rate * 2;
+    const length = rate * 3.5;
     const buffer = this.ctx.createBuffer(2, length, rate);
     for (let ch = 0; ch < 2; ch++) {
       const data = buffer.getChannelData(ch);
       for (let i = 0; i < length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.5);
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.0);
       }
     }
     convolver.buffer = buffer;
@@ -66,33 +66,61 @@ export class AudioManager {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 300;
-    filter.Q.value = 1;
+    filter.frequency.value = 400;
+    filter.Q.value = 0.7;
     filter.connect(this.padGain);
 
     this.lfoNode = this.ctx.createOscillator();
     this.lfoNode.type = 'sine';
-    this.lfoNode.frequency.value = 0.15;
+    this.lfoNode.frequency.value = 0.08;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 50;
+    lfoGain.gain.value = 80;
     this.lfoNode.connect(lfoGain);
     lfoGain.connect(filter.frequency);
     this.lfoNode.start();
 
-    const baseFreqs = [55, 82.5, 110, 55.5, 82, 110.5];
-    const types: OscillatorType[] = ['sine', 'sine', 'triangle', 'sine', 'sine', 'triangle'];
+    const baseFreqs = [55, 82.5, 110, 55.5, 82, 110.5, 220, 330];
+    const types: OscillatorType[] = ['sine', 'sine', 'triangle', 'sine', 'sine', 'triangle', 'sine', 'sine'];
 
     for (let i = 0; i < baseFreqs.length; i++) {
       const osc = this.ctx.createOscillator();
       osc.type = types[i];
       osc.frequency.value = baseFreqs[i];
       const voiceGain = this.ctx.createGain();
-      voiceGain.gain.value = i < 2 ? 0.04 : 0;
+      voiceGain.gain.value = i < 2 ? 0.04 : (i >= 6 ? 0.008 : 0);
       osc.connect(voiceGain);
       voiceGain.connect(filter);
       osc.start();
       this.padVoices.push({ osc, gain: voiceGain });
     }
+
+    // High shimmer for galaxy sparkle
+    const shimmer = this.ctx.createOscillator();
+    shimmer.type = 'sine';
+    shimmer.frequency.value = 880;
+    const shimmerGain = this.ctx.createGain();
+    shimmerGain.gain.value = 0;
+    shimmer.connect(shimmerGain);
+
+    const shimmerLfo = this.ctx.createOscillator();
+    shimmerLfo.type = 'sine';
+    shimmerLfo.frequency.value = 0.3;
+    const shimmerLfoGain = this.ctx.createGain();
+    shimmerLfoGain.gain.value = 0.006;
+    shimmerLfo.connect(shimmerLfoGain);
+    shimmerLfoGain.connect(shimmerGain.gain);
+
+    if (this.reverbConvolver) {
+      const shimmerReverb = this.ctx.createGain();
+      shimmerReverb.gain.value = 0.5;
+      shimmerGain.connect(shimmerReverb);
+      shimmerReverb.connect(this.reverbConvolver);
+      this.reverbConvolver.connect(this.masterGain);
+    }
+    shimmerGain.connect(this.padGain);
+    shimmer.start();
+    shimmerLfo.start();
+    this.padVoices.push({ osc: shimmer, gain: shimmerGain });
 
     this.padGain.gain.setValueAtTime(0, this.ctx.currentTime);
     this.padGain.gain.linearRampToValueAtTime(0.14, this.ctx.currentTime + 4);
@@ -127,7 +155,7 @@ export class AudioManager {
           osc.connect(gain);
           if (this.reverbConvolver) {
             const reverbSend = this.ctx.createGain();
-            reverbSend.gain.value = 0.3;
+            reverbSend.gain.value = 0.45;
             gain.connect(reverbSend);
             reverbSend.connect(this.reverbConvolver);
             this.reverbConvolver.connect(this.masterGain);
@@ -150,42 +178,80 @@ export class AudioManager {
     if (!cfg) return;
 
     const now = this.ctx.currentTime;
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-    gain.connect(this.masterGain);
+    const freq = cfg.chimeFrequency * 2;
 
-    const osc = this.ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(cfg.chimeFrequency, now);
-    osc.frequency.exponentialRampToValueAtTime(cfg.chimeFrequency * 1.5, now + 0.15);
+    const gain1 = this.ctx.createGain();
+    gain1.gain.setValueAtTime(0.18, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    gain1.connect(this.masterGain);
 
-    const osc2 = this.ctx.createOscillator();
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(cfg.chimeFrequency * 2, now);
-    osc2.frequency.exponentialRampToValueAtTime(cfg.chimeFrequency * 3, now + 0.3);
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = freq;
+    osc1.connect(gain1);
 
     const gain2 = this.ctx.createGain();
-    gain2.gain.setValueAtTime(0.06, now);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    gain2.gain.setValueAtTime(0.07, now);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
     gain2.connect(this.masterGain);
 
-    osc.connect(gain);
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = cfg.chimeFrequency * 3;
     osc2.connect(gain2);
+
+    const gain3 = this.ctx.createGain();
+    gain3.gain.setValueAtTime(0.03, now);
+    gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    gain3.connect(this.masterGain);
+
+    const osc3 = this.ctx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.value = cfg.chimeFrequency * 5;
+    osc3.connect(gain3);
 
     if (this.reverbConvolver) {
       const reverbSend = this.ctx.createGain();
-      reverbSend.gain.value = 0.25;
-      gain.connect(reverbSend);
+      reverbSend.gain.value = 0.4;
+      gain1.connect(reverbSend);
       gain2.connect(reverbSend);
       reverbSend.connect(this.reverbConvolver);
       this.reverbConvolver.connect(this.masterGain);
     }
 
-    osc.start(now);
-    osc.stop(now + 1.2);
+    osc1.start(now);
+    osc1.stop(now + 0.5);
     osc2.start(now);
-    osc2.stop(now + 0.8);
+    osc2.stop(now + 0.25);
+    osc3.start(now);
+    osc3.stop(now + 0.15);
+  }
+
+  playGenericCollect(): void {
+    this.ensureContext();
+    if (!this.ctx || !this.masterGain) return;
+
+    const now = this.ctx.currentTime;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    gain.connect(this.masterGain);
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 523;
+    osc.connect(gain);
+
+    if (this.reverbConvolver) {
+      const reverbSend = this.ctx.createGain();
+      reverbSend.gain.value = 0.3;
+      gain.connect(reverbSend);
+      reverbSend.connect(this.reverbConvolver);
+      this.reverbConvolver.connect(this.masterGain);
+    }
+
+    osc.start(now);
+    osc.stop(now + 0.3);
   }
 
   playColorComplete(): void {

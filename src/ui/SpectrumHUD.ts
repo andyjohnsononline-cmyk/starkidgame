@@ -4,7 +4,7 @@ import { STAR_COLORS, StarColor, REQUIRED_PER_COLOR, StarColorConfig } from '../
 export class SpectrumHUD {
   private scene: Phaser.Scene;
   private container: Phaser.GameObjects.Container;
-  private segments: Map<StarColor, { bg: Phaser.GameObjects.Graphics; fill: Phaser.GameObjects.Graphics; text: Phaser.GameObjects.Text }> = new Map();
+  private segments: Map<StarColor, { bg: Phaser.GameObjects.Graphics; fill: Phaser.GameObjects.Graphics }> = new Map();
   private collected: Map<StarColor, number> = new Map();
   private completed: Set<StarColor> = new Set();
   private bloomed = false;
@@ -57,27 +57,17 @@ export class SpectrumHUD {
       const fill = this.scene.add.graphics();
       this.container.add(fill);
 
-      const text = this.scene.add.text(x + this.segWidth / 2, y + this.segHeight / 2, '0/10', {
-        fontSize: '13px',
-        fontFamily: 'monospace',
-        color: '#ffffff',
-        align: 'center',
-      });
-      text.setOrigin(0.5);
-      text.setAlpha(0.8);
-      this.container.add(text);
-
-      this.segments.set(cfg.color, { bg, fill, text });
+      this.segments.set(cfg.color, { bg, fill });
     });
 
-    this.totalText = this.scene.add.text(1024 / 2, 768 - this.segHeight - 32, '0 / 70 stars', {
-      fontSize: '11px',
+    this.totalText = this.scene.add.text(1024 / 2, 768 - this.segHeight - 30, 'spectrum', {
+      fontSize: '10px',
       fontFamily: 'monospace',
-      color: '#8899aa',
+      color: '#556677',
       align: 'center',
     });
     this.totalText.setOrigin(0.5);
-    this.totalText.setAlpha(0.7);
+    this.totalText.setAlpha(0.5);
     this.container.add(this.totalText);
   }
 
@@ -122,8 +112,6 @@ export class SpectrumHUD {
       seg.fill.fillStyle(cfg.hex, 0.6);
       seg.fill.fillRoundedRect(x + 2, y + 2, fillWidth, this.segHeight - 4, 3);
     }
-
-    seg.text.setText(`${Math.min(count, REQUIRED_PER_COLOR)}/${REQUIRED_PER_COLOR}`);
   }
 
   private updateTotalText(): void {
@@ -132,7 +120,6 @@ export class SpectrumHUD {
       total += Math.min(this.collected.get(cfg.color) || 0, REQUIRED_PER_COLOR);
     }
     const max = REQUIRED_PER_COLOR * STAR_COLORS.length;
-    this.totalText.setText(`${total} / ${max} stars`);
     if (total === max) {
       this.totalText.setColor('#ffd700');
       this.totalText.setAlpha(1);

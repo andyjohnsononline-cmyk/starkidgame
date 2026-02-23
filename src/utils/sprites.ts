@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { STAR_COLORS } from './colors';
+import { STAR_COLORS, GOLD_HEX } from './colors';
 
 export function generateAllTextures(scene: Phaser.Scene): void {
   const has = (key: string) => scene.textures.exists(key) && scene.textures.get(key).key !== '__MISSING';
@@ -128,6 +128,31 @@ function generateStarTextures(scene: Phaser.Scene): void {
     g.generateTexture(`star_${cfg.color}`, size, size);
     g.destroy();
   }
+
+  // Gold (bonus) star texture
+  const gg = scene.add.graphics();
+  const gSize = 24;
+  const gcx = gSize / 2, gcy = gSize / 2;
+
+  gg.fillStyle(GOLD_HEX, 0.15);
+  gg.fillCircle(gcx, gcy, 11);
+  gg.fillStyle(GOLD_HEX, 0.3);
+  gg.fillCircle(gcx, gcy, 8);
+
+  const gPoints: Phaser.Math.Vector2[] = [];
+  for (let i = 0; i < 10; i++) {
+    const angle = (Math.PI / 2) * -1 + (i * Math.PI) / 5;
+    const r = i % 2 === 0 ? 7 : 3;
+    gPoints.push(new Phaser.Math.Vector2(gcx + Math.cos(angle) * r, gcy + Math.sin(angle) * r));
+  }
+  gg.fillStyle(GOLD_HEX);
+  gg.fillPoints(gPoints, true);
+
+  gg.fillStyle(0xffffff, 0.8);
+  gg.fillCircle(gcx, gcy, 2);
+
+  gg.generateTexture('star_gold', gSize, gSize);
+  gg.destroy();
 }
 
 function generateStarKidTexture(scene: Phaser.Scene): void {
