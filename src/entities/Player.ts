@@ -12,6 +12,7 @@ export class Player {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private moveTarget: Phaser.Math.Vector2 | null = null;
+  private pointerHeld = false;
   private exhaust: Phaser.GameObjects.Particles.ParticleEmitter;
   private trail: Phaser.GameObjects.Particles.ParticleEmitter;
   private stunTimer = 0;
@@ -42,10 +43,19 @@ export class Player {
     }
 
     scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      this.moveTarget = new Phaser.Math.Vector2(
-        pointer.worldX,
-        pointer.worldY,
-      );
+      this.pointerHeld = true;
+      this.moveTarget = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
+    });
+
+    scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (this.pointerHeld) {
+        this.moveTarget = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
+      }
+    });
+
+    scene.input.on('pointerup', () => {
+      this.pointerHeld = false;
+      this.moveTarget = null;
     });
 
     this.exhaust = scene.add.particles(0, 0, 'exhaust', {

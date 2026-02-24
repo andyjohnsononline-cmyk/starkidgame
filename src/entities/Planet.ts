@@ -92,8 +92,9 @@ export class Planet {
     const ny = Math.sin(angle);
     const dot = body.velocity.x * nx + body.velocity.y * ny;
     if (dot < 0) {
-      body.velocity.x -= dot * nx;
-      body.velocity.y -= dot * ny;
+      const bounce = 0.5;
+      body.velocity.x -= (1 + bounce) * dot * nx;
+      body.velocity.y -= (1 + bounce) * dot * ny;
     }
   }
 }

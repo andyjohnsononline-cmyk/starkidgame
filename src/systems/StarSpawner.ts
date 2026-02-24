@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Star } from '../entities/Star';
-import { STAR_COLORS, StarColor, WORLD_WIDTH, WORLD_HEIGHT, GOLD_SPAWN_COUNT } from '../utils/colors';
+import { STAR_COLORS, StarColor, WORLD_WIDTH, WORLD_HEIGHT, GOLD_SPAWN_COUNT, PLANET_CENTER_X, PLANET_CENTER_Y, PLANET_RADIUS } from '../utils/colors';
 
 const MARGIN = 150;
 const CLUSTER_SPREAD = 120;
@@ -94,7 +94,27 @@ export class StarSpawner {
     }
   }
 
+  private isInsidePlanet(x: number, y: number): boolean {
+    const dx = x - PLANET_CENTER_X;
+    const dy = y - PLANET_CENTER_Y;
+    return Math.sqrt(dx * dx + dy * dy) < PLANET_RADIUS + 60;
+  }
+
+  private safePosition(): { x: number; y: number } {
+    for (let i = 0; i < 50; i++) {
+      const x = MARGIN + Math.random() * (WORLD_WIDTH - MARGIN * 2);
+      const y = MARGIN + Math.random() * (WORLD_HEIGHT - MARGIN * 2);
+      if (!this.isInsidePlanet(x, y)) return { x, y };
+    }
+    return { x: WORLD_WIDTH / 2, y: MARGIN };
+  }
+
   private placeStar(color: StarColor, x: number, y: number): void {
+    if (this.isInsidePlanet(x, y)) {
+      const safe = this.safePosition();
+      x = safe.x;
+      y = safe.y;
+    }
     const star = new Star(this.scene, x, y, color);
     this.starGroup.add(star);
     this.stars.push(star);
