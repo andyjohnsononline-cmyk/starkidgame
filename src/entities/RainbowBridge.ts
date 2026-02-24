@@ -2,13 +2,14 @@ import Phaser from 'phaser';
 import { STAR_COLORS } from '../utils/colors';
 
 const BRIDGE_SEGMENTS = 40;
-const BAND_WIDTH = 6;
+const BAND_WIDTH = 14;
 const RIDE_SPEED = 180;
 
 export class RainbowBridge {
   private scene: Phaser.Scene;
   private graphics: Phaser.GameObjects.Graphics;
   private glowGraphics: Phaser.GameObjects.Graphics;
+  private hazeGraphics: Phaser.GameObjects.Graphics;
   private zone: Phaser.GameObjects.Zone;
   private startX: number;
   private startY: number;
@@ -29,6 +30,10 @@ export class RainbowBridge {
     this.arcHeight = arcLength * 0.35;
     this.lifetime = 18000;
 
+    this.hazeGraphics = scene.add.graphics();
+    this.hazeGraphics.setDepth(2);
+    this.hazeGraphics.setAlpha(0);
+
     this.glowGraphics = scene.add.graphics();
     this.glowGraphics.setDepth(3);
     this.glowGraphics.setAlpha(0);
@@ -41,14 +46,14 @@ export class RainbowBridge {
 
     const midPoint = this.getArcPoint(0.5);
     const zoneW = arcLength * 0.9;
-    const zoneH = STAR_COLORS.length * BAND_WIDTH + 40;
+    const zoneH = STAR_COLORS.length * BAND_WIDTH + 60;
     this.zone = scene.add.zone(midPoint.x, midPoint.y, zoneW, zoneH);
     scene.physics.add.existing(this.zone, true);
 
     scene.tweens.add({
-      targets: [this.graphics, this.glowGraphics],
+      targets: [this.graphics, this.glowGraphics, this.hazeGraphics],
       alpha: 1,
-      duration: 1500,
+      duration: 2000,
       ease: 'Sine.easeInOut',
     });
   }
@@ -111,11 +116,19 @@ export class RainbowBridge {
       const cfg = STAR_COLORS[b];
       const offset = (b - numBands / 2) * BAND_WIDTH;
 
-      this.glowGraphics.lineStyle(BAND_WIDTH * 2.5, cfg.hex, 0.12);
+      // Outer haze - wide, soft dreamy aura
+      this.hazeGraphics.lineStyle(BAND_WIDTH * 5, cfg.hex, 0.06);
+      this.hazeGraphics.beginPath();
+
+      // Inner glow
+      this.glowGraphics.lineStyle(BAND_WIDTH * 3.5, cfg.hex, 0.18);
       this.glowGraphics.beginPath();
-      this.graphics.lineStyle(BAND_WIDTH, cfg.hex, 0.85);
+
+      // Main band
+      this.graphics.lineStyle(BAND_WIDTH, cfg.hex, 0.9);
       this.graphics.beginPath();
 
+      let firstHaze = true;
       let firstGlow = true;
       let firstMain = true;
       for (let s = 0; s <= BRIDGE_SEGMENTS; s++) {
@@ -131,6 +144,12 @@ export class RainbowBridge {
         const px = pt.x + nx * offset;
         const py = pt.y + ny * offset;
 
+        if (firstHaze) {
+          this.hazeGraphics.moveTo(px, py);
+          firstHaze = false;
+        } else {
+          this.hazeGraphics.lineTo(px, py);
+        }
         if (firstGlow) {
           this.glowGraphics.moveTo(px, py);
           firstGlow = false;
@@ -144,6 +163,7 @@ export class RainbowBridge {
           this.graphics.lineTo(px, py);
         }
       }
+      this.hazeGraphics.strokePath();
       this.glowGraphics.strokePath();
       this.graphics.strokePath();
     }
@@ -152,6 +172,15 @@ export class RainbowBridge {
   update(delta: number): void {
     if (this._destroyed) return;
     this.elapsed += delta;
+
+    // Shimmer: oscillate glow alpha for a dreamy breathing effect
+    const t = this.elapsed / 1000;
+    const shimmer = 0.14 + 0.14 * Math.sin(t * 1.2);
+    const hazeShimmer = 0.7 + 0.3 * Math.sin(t * 0.8 + 0.5);
+    if (!this.fadingOut) {
+      this.glowGraphics.setAlpha(shimmer / 0.18);
+      this.hazeGraphics.setAlpha(hazeShimmer);
+    }
 
     if (!this.fadingOut && this.elapsed >= this.lifetime) {
       this.fadeOut();
@@ -162,7 +191,7 @@ export class RainbowBridge {
     if (this.fadingOut) return;
     this.fadingOut = true;
     this.scene.tweens.add({
-      targets: [this.graphics, this.glowGraphics],
+      targets: [this.graphics, this.glowGraphics, this.hazeGraphics],
       alpha: 0,
       duration: 2000,
       ease: 'Sine.easeInOut',
@@ -175,6 +204,7 @@ export class RainbowBridge {
     this._destroyed = true;
     this.graphics.destroy();
     this.glowGraphics.destroy();
+    this.hazeGraphics.destroy();
     this.zone.destroy();
   }
 }

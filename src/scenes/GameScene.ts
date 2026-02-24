@@ -7,13 +7,11 @@ import { HazardManager } from '../systems/HazardManager';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { SpectrumHUD } from '../ui/SpectrumHUD';
 import { Star } from '../entities/Star';
-import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor, GOLD_HEX } from '../utils/colors';
-import { RainbowBridge } from '../entities/RainbowBridge';
+import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor } from '../utils/colors';
+import { PortalManager } from '../systems/PortalManager';
 import { audioManager } from '../systems/AudioManager';
 
 const CHEAT_SEQUENCES = ['STARS', 'STARKID'];
-const MAX_BRIDGES = 4;
-const BRIDGE_SPAWN_INTERVAL = 6000;
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -22,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private hazardManager!: HazardManager;
   private parallaxBg!: ParallaxBackground;
   private spectrumHUD!: SpectrumHUD;
+  private portalManager!: PortalManager;
   private starkid: StarKid | null = null;
   private starkidArrow: Phaser.GameObjects.Graphics | null = null;
   private starkidArrowLabel: Phaser.GameObjects.Text | null = null;
@@ -31,11 +30,7 @@ export class GameScene extends Phaser.Scene {
   private audioInitialized = false;
   private cheatBuffer: string[] = [];
   private cheatResetTimer: ReturnType<typeof setTimeout> | null = null;
-  private companionMode = false;
   private blackOverlay: Phaser.GameObjects.Graphics | null = null;
-  private rainbowBridges: RainbowBridge[] = [];
-  private bridgeSpawnTimer = 0;
-  private bridgeOverlaps: Phaser.Physics.Arcade.Collider[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -50,6 +45,8 @@ export class GameScene extends Phaser.Scene {
     this.starSpawner = new StarSpawner(this);
     this.hazardManager = new HazardManager(this);
     this.spectrumHUD = new SpectrumHUD(this);
+    this.portalManager = new PortalManager(this);
+    this.portalManager.setupOverlaps(this.player.sprite);
 
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.startFollow(this.player.sprite, true, 0.08, 0.08);
@@ -120,9 +117,6 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    this.events.on('wake', (_sys: Phaser.Scenes.Systems, data?: { companion?: boolean }) => {
-      if (data?.companion) this.activateCompanionMode();
-    });
   }
 
   private setupStarCollection(): void {
@@ -137,13 +131,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private collectStar(star: Star): void {
-    if (star.starColor === StarColor.Gold) {
-      audioManager.playGenericCollect();
-      this.createGoldCollectEffect(star.x, star.y);
-      this.starSpawner.removeStar(star);
-      return;
-    }
-
     const result = this.spectrumHUD.addStar(star.starColor);
     this.totalCollected++;
 
@@ -170,21 +157,6 @@ export class GameScene extends Phaser.Scene {
       this.spectrumComplete = true;
       this.onSpectrumComplete();
     }
-  }
-
-  private createGoldCollectEffect(x: number, y: number): void {
-    const emitter = this.add.particles(x, y, 'particle', {
-      speed: { min: 30, max: 100 },
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      lifespan: 350,
-      quantity: 6,
-      tint: GOLD_HEX,
-      blendMode: 'ADD',
-      emitting: false,
-    });
-    emitter.explode(6);
-    this.time.delayedCall(400, () => emitter.destroy());
   }
 
   private createCollectEffect(x: number, y: number, color: StarColor): void {
@@ -302,85 +274,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private activateCompanionMode(): void {
-    this.companionMode = true;
-
-    const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setImmovable(false);
-    this.player.sprite.setDepth(10);
-
-    if (this.blackOverlay) {
-      this.blackOverlay.destroy();
-      this.blackOverlay = null;
-    }
-
-    if (this.starkidArrow) {
-      this.starkidArrow.destroy();
-      this.starkidArrow = null;
-    }
-    if (this.starkidArrowLabel) {
-      this.starkidArrowLabel.destroy();
-      this.starkidArrowLabel = null;
-    }
-
-    if (this.starkid) {
-      this.starkid.setCompanionMode();
-      this.starkid.setPosition(
-        this.player.sprite.x - 60,
-        this.player.sprite.y + 20,
-      );
-    }
-
-    this.cameras.main.fadeIn(2000, 0, 0, 0);
-    this.bridgeSpawnTimer = BRIDGE_SPAWN_INTERVAL * 0.5;
-  }
-
-  private spawnRainbowBridge(): void {
-    if (this.rainbowBridges.length >= MAX_BRIDGES) return;
-
-    const px = this.player.sprite.x;
-    const py = this.player.sprite.y;
-
-    const spawnAngle = Math.random() * Math.PI * 2;
-    const spawnDist = 400 + Math.random() * 600;
-    const bx = Phaser.Math.Clamp(px + Math.cos(spawnAngle) * spawnDist, 300, WORLD_WIDTH - 300);
-    const by = Phaser.Math.Clamp(py + Math.sin(spawnAngle) * spawnDist, 300, WORLD_HEIGHT - 600);
-
-    const arcAngle = (Math.random() - 0.5) * 0.6;
-    const arcLength = 350 + Math.random() * 300;
-
-    const bridge = new RainbowBridge(this, bx, by, arcAngle, arcLength);
-    this.rainbowBridges.push(bridge);
-
-    const overlap = this.physics.add.overlap(
-      this.player.sprite,
-      bridge.getPhysicsZone(),
-      () => bridge.applyRideForce(this.player.sprite),
-    );
-    this.bridgeOverlaps.push(overlap);
-  }
-
-  private updateRainbowBridges(delta: number): void {
-    for (let i = this.rainbowBridges.length - 1; i >= 0; i--) {
-      const bridge = this.rainbowBridges[i];
-      bridge.update(delta);
-
-      if (bridge.destroyed) {
-        this.rainbowBridges.splice(i, 1);
-        if (this.bridgeOverlaps[i]) {
-          this.bridgeOverlaps[i].destroy();
-          this.bridgeOverlaps.splice(i, 1);
-        }
-      }
-    }
-
-    this.bridgeSpawnTimer += delta;
-    if (this.bridgeSpawnTimer >= BRIDGE_SPAWN_INTERVAL) {
-      this.bridgeSpawnTimer = 0;
-      this.spawnRainbowBridge();
-    }
-  }
-
   update(time: number, delta: number): void {
     this.planet.applyGravity(this.player.sprite, delta);
     this.player.update(delta);
@@ -389,17 +282,9 @@ export class GameScene extends Phaser.Scene {
     this.hazardManager.update(this.player, delta);
     this.parallaxBg.update(time, this.cameras.main);
     this.starkid?.update(time);
+    this.portalManager.update(time, this.player.sprite.x, this.player.sprite.y);
 
-    if (this.companionMode) {
-      this.starkid?.followTarget(
-        this.player.sprite.x - 60,
-        this.player.sprite.y + 20,
-        delta,
-      );
-      this.updateRainbowBridges(delta);
-    } else {
-      this.updateStarKidArrow(time);
-    }
+    this.updateStarKidArrow(time);
   }
 
   private createVignette(): void {
