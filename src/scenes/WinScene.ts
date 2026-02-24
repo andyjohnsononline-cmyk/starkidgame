@@ -221,8 +221,7 @@ export class WinScene extends Phaser.Scene {
       }
       this.orbitStars = [];
 
-      this.scene.wake('GameScene', { companion: true });
-      this.scene.stop();
+      this.scene.start('FriendshipScene');
     });
   }
 }
