@@ -21,13 +21,13 @@ export interface StarColorConfig {
 }
 
 export const STAR_COLORS: StarColorConfig[] = [
-  { color: StarColor.Red, hex: 0xff3333, cssHex: '#ff3333', rarity: 'common', spawnCount: 14, chimeFrequency: 262 },
-  { color: StarColor.Orange, hex: 0xff8833, cssHex: '#ff8833', rarity: 'common', spawnCount: 14, chimeFrequency: 294 },
-  { color: StarColor.Yellow, hex: 0xffdd33, cssHex: '#ffdd33', rarity: 'common', spawnCount: 13, chimeFrequency: 330 },
-  { color: StarColor.Green, hex: 0x33ff66, cssHex: '#33ff66', rarity: 'uncommon', spawnCount: 12, chimeFrequency: 349 },
-  { color: StarColor.Blue, hex: 0x3388ff, cssHex: '#3388ff', rarity: 'uncommon', spawnCount: 11, chimeFrequency: 392 },
-  { color: StarColor.Indigo, hex: 0x5533ff, cssHex: '#5533ff', rarity: 'rare', spawnCount: 11, chimeFrequency: 440 },
-  { color: StarColor.Violet, hex: 0xcc33ff, cssHex: '#cc33ff', rarity: 'rare', spawnCount: 10, chimeFrequency: 494 },
+  { color: StarColor.Red, hex: 0xff3333, cssHex: '#ff3333', rarity: 'common', spawnCount: 18, chimeFrequency: 262 },
+  { color: StarColor.Orange, hex: 0xff8833, cssHex: '#ff8833', rarity: 'common', spawnCount: 18, chimeFrequency: 294 },
+  { color: StarColor.Yellow, hex: 0xffdd33, cssHex: '#ffdd33', rarity: 'common', spawnCount: 17, chimeFrequency: 330 },
+  { color: StarColor.Green, hex: 0x33ff66, cssHex: '#33ff66', rarity: 'uncommon', spawnCount: 16, chimeFrequency: 349 },
+  { color: StarColor.Blue, hex: 0x3388ff, cssHex: '#3388ff', rarity: 'uncommon', spawnCount: 14, chimeFrequency: 392 },
+  { color: StarColor.Indigo, hex: 0x5533ff, cssHex: '#5533ff', rarity: 'rare', spawnCount: 14, chimeFrequency: 440 },
+  { color: StarColor.Violet, hex: 0xcc33ff, cssHex: '#cc33ff', rarity: 'rare', spawnCount: 13, chimeFrequency: 494 },
 ];
 
 export const REQUIRED_PER_COLOR = 10;
@@ -40,11 +40,11 @@ export const GOLD_CSS_HEX = '#ffd700';
 export const WORLD_WIDTH = 4000;
 export const WORLD_HEIGHT = 3000;
 
-export const PLANET_RADIUS = 3500;
+export const PLANET_RADIUS = 533;
 export const PLANET_CENTER_X = WORLD_WIDTH / 2;
 export const PLANET_CENTER_Y = WORLD_HEIGHT + PLANET_RADIUS - 350;
-export const PLANET_GRAVITY = 200;
-export const PLANET_GRAVITY_RANGE = 800;
+export const PLANET_GRAVITY = 60;
+export const PLANET_GRAVITY_RANGE = 350;
 
 export function getStarConfig(color: StarColor): StarColorConfig {
   return STAR_COLORS.find(c => c.color === color)!;
