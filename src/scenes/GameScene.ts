@@ -8,9 +8,12 @@ import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { SpectrumHUD } from '../ui/SpectrumHUD';
 import { Star } from '../entities/Star';
 import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor, GOLD_HEX } from '../utils/colors';
+import { RainbowBridge } from '../entities/RainbowBridge';
 import { audioManager } from '../systems/AudioManager';
 
 const CHEAT_SEQUENCES = ['STARS', 'STARKID'];
+const MAX_BRIDGES = 4;
+const BRIDGE_SPAWN_INTERVAL = 6000;
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -28,6 +31,11 @@ export class GameScene extends Phaser.Scene {
   private audioInitialized = false;
   private cheatBuffer: string[] = [];
   private cheatResetTimer: ReturnType<typeof setTimeout> | null = null;
+  private companionMode = false;
+  private blackOverlay: Phaser.GameObjects.Graphics | null = null;
+  private rainbowBridges: RainbowBridge[] = [];
+  private bridgeSpawnTimer = 0;
+  private bridgeOverlaps: Phaser.Physics.Arcade.Collider[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -110,6 +118,10 @@ export class GameScene extends Phaser.Scene {
           break;
         }
       }
+    });
+
+    this.events.on('wake', (_sys: Phaser.Scenes.Systems, data?: { companion?: boolean }) => {
+      if (data?.companion) this.activateCompanionMode();
     });
   }
 
@@ -213,7 +225,6 @@ export class GameScene extends Phaser.Scene {
   private onSpectrumComplete(): void {
     audioManager.playWinSwell();
 
-    const cam = this.cameras.main;
     const skX = Phaser.Math.Clamp(
       this.player.sprite.x + (Math.random() - 0.5) * 600,
       200, WORLD_WIDTH - 200,
@@ -249,25 +260,26 @@ export class GameScene extends Phaser.Scene {
         body.setVelocity(0, 0);
         body.setImmovable(true);
 
-        const blackOverlay = this.add.graphics();
-        blackOverlay.setDepth(500);
-        blackOverlay.setScrollFactor(0);
-        blackOverlay.fillStyle(0x000000, 1);
-        blackOverlay.fillRect(0, 0, 1024, 768);
-        blackOverlay.setAlpha(0);
+        this.blackOverlay = this.add.graphics();
+        this.blackOverlay.setDepth(500);
+        this.blackOverlay.setScrollFactor(0);
+        this.blackOverlay.fillStyle(0x000000, 1);
+        this.blackOverlay.fillRect(0, 0, 1024, 768);
+        this.blackOverlay.setAlpha(0);
 
         this.starkid!.elevateDepth(501);
         this.player.sprite.setDepth(504);
 
         this.tweens.add({
-          targets: blackOverlay,
+          targets: this.blackOverlay,
           alpha: 1,
           duration: 2000,
           ease: 'Sine.easeInOut',
           onComplete: () => {
             this.cameras.main.fadeOut(1500, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () => {
-              this.scene.start('WinScene');
+              this.scene.sleep();
+              this.scene.launch('WinScene');
             });
           },
         });
@@ -290,6 +302,85 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private activateCompanionMode(): void {
+    this.companionMode = true;
+
+    const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setImmovable(false);
+    this.player.sprite.setDepth(10);
+
+    if (this.blackOverlay) {
+      this.blackOverlay.destroy();
+      this.blackOverlay = null;
+    }
+
+    if (this.starkidArrow) {
+      this.starkidArrow.destroy();
+      this.starkidArrow = null;
+    }
+    if (this.starkidArrowLabel) {
+      this.starkidArrowLabel.destroy();
+      this.starkidArrowLabel = null;
+    }
+
+    if (this.starkid) {
+      this.starkid.setCompanionMode();
+      this.starkid.setPosition(
+        this.player.sprite.x - 60,
+        this.player.sprite.y + 20,
+      );
+    }
+
+    this.cameras.main.fadeIn(2000, 0, 0, 0);
+    this.bridgeSpawnTimer = BRIDGE_SPAWN_INTERVAL * 0.5;
+  }
+
+  private spawnRainbowBridge(): void {
+    if (this.rainbowBridges.length >= MAX_BRIDGES) return;
+
+    const px = this.player.sprite.x;
+    const py = this.player.sprite.y;
+
+    const spawnAngle = Math.random() * Math.PI * 2;
+    const spawnDist = 400 + Math.random() * 600;
+    const bx = Phaser.Math.Clamp(px + Math.cos(spawnAngle) * spawnDist, 300, WORLD_WIDTH - 300);
+    const by = Phaser.Math.Clamp(py + Math.sin(spawnAngle) * spawnDist, 300, WORLD_HEIGHT - 600);
+
+    const arcAngle = (Math.random() - 0.5) * 0.6;
+    const arcLength = 350 + Math.random() * 300;
+
+    const bridge = new RainbowBridge(this, bx, by, arcAngle, arcLength);
+    this.rainbowBridges.push(bridge);
+
+    const overlap = this.physics.add.overlap(
+      this.player.sprite,
+      bridge.getPhysicsZone(),
+      () => bridge.applyRideForce(this.player.sprite),
+    );
+    this.bridgeOverlaps.push(overlap);
+  }
+
+  private updateRainbowBridges(delta: number): void {
+    for (let i = this.rainbowBridges.length - 1; i >= 0; i--) {
+      const bridge = this.rainbowBridges[i];
+      bridge.update(delta);
+
+      if (bridge.destroyed) {
+        this.rainbowBridges.splice(i, 1);
+        if (this.bridgeOverlaps[i]) {
+          this.bridgeOverlaps[i].destroy();
+          this.bridgeOverlaps.splice(i, 1);
+        }
+      }
+    }
+
+    this.bridgeSpawnTimer += delta;
+    if (this.bridgeSpawnTimer >= BRIDGE_SPAWN_INTERVAL) {
+      this.bridgeSpawnTimer = 0;
+      this.spawnRainbowBridge();
+    }
+  }
+
   update(time: number, delta: number): void {
     this.planet.applyGravity(this.player.sprite, delta);
     this.player.update(delta);
@@ -298,7 +389,17 @@ export class GameScene extends Phaser.Scene {
     this.hazardManager.update(this.player, delta);
     this.parallaxBg.update(time, this.cameras.main);
     this.starkid?.update(time);
-    this.updateStarKidArrow(time);
+
+    if (this.companionMode) {
+      this.starkid?.followTarget(
+        this.player.sprite.x - 60,
+        this.player.sprite.y + 20,
+        delta,
+      );
+      this.updateRainbowBridges(delta);
+    } else {
+      this.updateStarKidArrow(time);
+    }
   }
 
   private createVignette(): void {

@@ -5,6 +5,7 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
   private auraParticles: Phaser.GameObjects.Particles.ParticleEmitter;
   private materialized = false;
   private baseY: number;
+  private isCompanion = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'starkid');
@@ -64,15 +65,41 @@ export class StarKid extends Phaser.Physics.Arcade.Sprite {
     this.auraParticles.setDepth(baseDepth);
   }
 
+  setCompanionMode(): void {
+    this.isCompanion = true;
+    this.body?.enable && ((this.body as Phaser.Physics.Arcade.StaticBody).enable = false);
+    this.setDepth(12);
+    this.glowSprite.setDepth(11);
+    this.auraParticles.setDepth(10);
+    this.setScale(0.8);
+    this.setAlpha(1);
+    this.glowSprite.setAlpha(0.25);
+    this.auraParticles.emitting = true;
+  }
+
+  followTarget(targetX: number, targetY: number, delta: number): void {
+    const lerpFactor = 1 - Math.pow(0.03, delta / 1000);
+    this.x = Phaser.Math.Linear(this.x, targetX, lerpFactor);
+    this.y = Phaser.Math.Linear(this.y, targetY, lerpFactor);
+    this.baseY = this.y;
+    this.glowSprite.setPosition(this.x, this.y);
+    this.auraParticles.setPosition(this.x, this.y);
+  }
+
   update(time: number): void {
     if (!this.materialized) return;
     const t = time / 1000;
-    const float = Math.sin(t * 0.8) * 5;
-    this.y = this.baseY + float;
-    this.glowSprite.setPosition(this.x, this.y);
-    this.auraParticles.setPosition(this.x, this.y);
 
-    const pulse = 1.3 + 0.3 * Math.sin(t * 1.2);
+    if (!this.isCompanion) {
+      const float = Math.sin(t * 0.8) * 5;
+      this.y = this.baseY + float;
+      this.glowSprite.setPosition(this.x, this.y);
+      this.auraParticles.setPosition(this.x, this.y);
+    }
+
+    const pulse = this.isCompanion
+      ? 1.0 + 0.2 * Math.sin(t * 1.2)
+      : 1.3 + 0.3 * Math.sin(t * 1.2);
     this.glowSprite.setScale(pulse);
     this.glowSprite.setAlpha(0.15 + 0.1 * Math.sin(t * 0.9));
   }
