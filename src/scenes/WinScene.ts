@@ -29,6 +29,8 @@ export class WinScene extends Phaser.Scene {
   private wasdKeys: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key } | null = null;
   private bgOverlay: Phaser.GameObjects.Graphics | null = null;
   private twinkleStars: { x: number; y: number; phase: number; speed: number }[] = [];
+  private friendshipText: Phaser.GameObjects.Text | null = null;
+  private companionTrailEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
 
   constructor() {
     super({ key: 'WinScene' });
@@ -316,68 +318,51 @@ export class WinScene extends Phaser.Scene {
         emitter.setDepth(9);
         this.slideTrailEmitters.push(emitter);
       }
-    });
-  }
 
-  private endRainbowSlide(): void {
-    this.cameras.main.fadeOut(3000, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.rainbowSlideActive = false;
-      this.slideGraphics?.destroy();
-      this.slideGraphics = null;
-      this.glowGraphics?.destroy();
-      this.glowGraphics = null;
-      this.bgOverlay?.destroy();
-      this.bgOverlay = null;
-      this.starkidSlider?.destroy();
-      this.starkidSlider = null;
-      this.astronautSlider?.destroy();
-      this.astronautSlider = null;
-      for (const emitter of this.slideTrailEmitters) {
-        emitter.destroy();
-      }
-      this.slideTrailEmitters = [];
-      this.twinkleStars = [];
+      this.companionTrailEmitter = this.add.particles(0, 0, 'particle', {
+        speed: { min: 5, max: 30 },
+        scale: { start: 0.4, end: 0 },
+        alpha: { start: 0.5, end: 0 },
+        lifespan: 800,
+        frequency: 40,
+        tint: [0xffd700, 0xffcc00, 0xffe066],
+        blendMode: 'ADD',
+        emitting: true,
+      });
+      this.companionTrailEmitter.setDepth(9);
 
-      const endText = this.add.text(512, 360, '\u2726', {
-        fontSize: '48px',
+      this.friendshipText = this.add.text(512, 120, '"Of course we can be friends."', {
+        fontSize: '24px',
+        fontFamily: 'Georgia, serif',
+        fontStyle: 'italic',
         color: '#ffeedd',
         align: 'center',
+        shadow: {
+          offsetX: 0, offsetY: 0,
+          color: 'rgba(255,215,100,0.5)',
+          blur: 30,
+          fill: true,
+        },
       });
-      endText.setOrigin(0.5);
-      endText.setAlpha(0);
+      this.friendshipText.setOrigin(0.5);
+      this.friendshipText.setAlpha(0);
+      this.friendshipText.setDepth(20);
 
-      const playAgain = this.add.text(512, 440, 'Play Again', {
-        fontSize: '18px',
-        fontFamily: 'Georgia, serif',
-        color: '#8899aa',
-        align: 'center',
-      });
-      playAgain.setOrigin(0.5);
-      playAgain.setAlpha(0);
-      playAgain.setInteractive({ useHandCursor: true });
-      playAgain.on('pointerover', () => playAgain.setColor('#ffd700'));
-      playAgain.on('pointerout', () => playAgain.setColor('#8899aa'));
-      playAgain.on('pointerdown', () => {
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('GameScene');
-        });
-      });
-
-      this.cameras.main.fadeIn(2000, 0, 0, 0);
       this.tweens.add({
-        targets: endText,
-        alpha: 0.6,
-        duration: 3000,
-        ease: 'Sine.easeInOut',
-      });
-      this.tweens.add({
-        targets: playAgain,
-        alpha: 0.8,
-        delay: 3000,
+        targets: this.friendshipText,
+        alpha: 0.85,
         duration: 2000,
+        delay: 500,
         ease: 'Sine.easeInOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: this.friendshipText,
+            alpha: 0.3,
+            duration: 4000,
+            delay: 3000,
+            ease: 'Sine.easeInOut',
+          });
+        },
       });
     });
   }
@@ -502,13 +487,14 @@ export class WinScene extends Phaser.Scene {
       this.slideGraphics.strokePath();
     }
 
-    const starkidProgress = (0.45 + this.slideTime) % 3;
+    const speedRatio = (this.astronautVelocity - minSpeed) / (maxSpeed - minSpeed);
+    const companionOffset = 0.04 + speedRatio * 0.03;
+    const starkidProgress = (this.astronautProgress + companionOffset) % 3;
     const astronautProg = this.astronautProgress % 3;
 
     const skPt = this.getSlidePoint(starkidProgress);
     const astPt = this.getSlidePoint(astronautProg);
 
-    // Astronaut tilt based on velocity
     if (this.astronautSlider) {
       this.astronautSlider.setPosition(astPt.x, astPt.y);
       const tilt = (this.astronautVelocity - 0.0008) * 8000;
@@ -519,16 +505,22 @@ export class WinScene extends Phaser.Scene {
 
     if (this.starkidSlider) {
       this.starkidSlider.setPosition(skPt.x, skPt.y);
+      const skBob = Math.sin(t * 2.5 + 1) * 4;
+      this.starkidSlider.y += skBob;
     }
 
-    // Trail particles -- intensity based on astronaut speed
-    const speedRatio = (this.astronautVelocity - minSpeed) / (maxSpeed - minSpeed);
     if (this.slideTrailEmitters[0]) {
       this.slideTrailEmitters[0].setPosition(skPt.x, skPt.y);
     }
     if (this.slideTrailEmitters[1]) {
       this.slideTrailEmitters[1].setPosition(astPt.x, astPt.y);
       this.slideTrailEmitters[1].setFrequency(Math.max(10, 40 - speedRatio * 30));
+    }
+    if (this.companionTrailEmitter) {
+      this.companionTrailEmitter.setPosition(
+        (astPt.x + skPt.x) / 2,
+        (astPt.y + skPt.y) / 2,
+      );
     }
   }
 }
