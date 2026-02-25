@@ -31,6 +31,18 @@ export class SpectrumHUD {
     }
 
     this.createHUD();
+    this.applyMobileScale();
+  }
+
+  private applyMobileScale(): void {
+    const narrow = window.innerWidth < 600;
+    if (!narrow) return;
+
+    const scale = 1.35;
+    const centerX = 512;
+    const centerY = 768 - this.segHeight / 2 - 16;
+    this.container.setScale(scale);
+    this.container.setPosition(centerX * (1 - scale), centerY * (1 - scale));
   }
 
   private createHUD(): void {
@@ -60,8 +72,9 @@ export class SpectrumHUD {
       this.segments.set(cfg.color, { bg, fill });
     });
 
+    const labelSize = window.innerWidth < 600 ? '13px' : '10px';
     this.totalText = this.scene.add.text(1024 / 2, 768 - this.segHeight - 30, 'spectrum', {
-      fontSize: '10px',
+      fontSize: labelSize,
       fontFamily: 'monospace',
       color: '#556677',
       align: 'center',

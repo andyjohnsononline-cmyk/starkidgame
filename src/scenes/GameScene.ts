@@ -10,6 +10,11 @@ import { Star } from '../entities/Star';
 import { WORLD_WIDTH, WORLD_HEIGHT, STAR_COLORS, StarColor } from '../utils/colors';
 import { PortalManager } from '../systems/PortalManager';
 import { audioManager } from '../systems/AudioManager';
+import { VirtualJoystick } from '../ui/VirtualJoystick';
+
+export function isMobile(): boolean {
+  return window.matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
+}
 
 const CHEAT_SEQUENCES = ['STARS', 'STARKID'];
 
@@ -31,6 +36,7 @@ export class GameScene extends Phaser.Scene {
   private cheatBuffer: string[] = [];
   private cheatResetTimer: ReturnType<typeof setTimeout> | null = null;
   private blackOverlay: Phaser.GameObjects.Graphics | null = null;
+  private joystick: VirtualJoystick | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -41,7 +47,13 @@ export class GameScene extends Phaser.Scene {
 
     this.parallaxBg = new ParallaxBackground(this);
     this.planet = new Planet(this);
-    this.player = new Player(this, this.planet.spawnX, this.planet.spawnY);
+
+    const mobile = isMobile();
+    if (mobile) {
+      this.joystick = new VirtualJoystick(this);
+    }
+
+    this.player = new Player(this, this.planet.spawnX, this.planet.spawnY, this.joystick ?? undefined);
     this.starSpawner = new StarSpawner(this);
     this.hazardManager = new HazardManager(this);
     this.spectrumHUD = new SpectrumHUD(this);
@@ -67,8 +79,15 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerdown', initAudio);
     this.input.keyboard?.on('keydown', initAudio);
 
-    // Start hint
-    const hint = this.add.text(512, 384 + 60, 'WASD or Arrow Keys to fly  ·  Click to set destination', {
+    if (mobile) {
+      this.setupMobileFullscreen();
+      this.setupOrientationPrompt();
+    }
+
+    const hintText = mobile
+      ? 'Drag to fly'
+      : 'WASD or Arrow Keys to fly  ·  Click to set destination';
+    const hint = this.add.text(512, 384 + 60, hintText, {
       fontSize: '15px',
       fontFamily: 'monospace',
       color: '#8899aa',
@@ -272,6 +291,54 @@ export class GameScene extends Phaser.Scene {
       this.spectrumComplete = true;
       this.onSpectrumComplete();
     }
+  }
+
+  private setupMobileFullscreen(): void {
+    let requested = false;
+    const requestFullscreen = () => {
+      if (requested) return;
+      requested = true;
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      }
+    };
+    this.input.once('pointerdown', requestFullscreen);
+  }
+
+  private setupOrientationPrompt(): void {
+    const overlay = document.createElement('div');
+    overlay.id = 'orientation-prompt';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      background: 'rgba(5, 5, 16, 0.95)',
+      display: 'none',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: '2000',
+      color: '#ffeedd',
+      fontFamily: 'Georgia, serif',
+      fontSize: '20px',
+      textAlign: 'center',
+      padding: '40px',
+      lineHeight: '1.6',
+    });
+    overlay.innerHTML = '<div style="font-size: 48px; margin-bottom: 20px;">&#x21BB;</div><div>Rotate your device to landscape for the best experience</div>';
+    document.body.appendChild(overlay);
+
+    const check = () => {
+      const portrait = window.innerHeight > window.innerWidth;
+      overlay.style.display = portrait ? 'flex' : 'none';
+    };
+
+    check();
+    window.addEventListener('resize', check);
+    screen.orientation?.addEventListener('change', check);
   }
 
   update(time: number, delta: number): void {
