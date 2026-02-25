@@ -33,7 +33,9 @@ export class QuestionUI {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: '10vh',
+      overflowY: 'auto',
       zIndex: '1000',
       pointerEvents: 'all',
       opacity: '0',
@@ -49,14 +51,14 @@ export class QuestionUI {
 
   private showPrompt(): void {
     this.container.innerHTML = `
-      <div style="text-align: center; max-width: 600px; padding: 40px;">
-        <p style="color: #ffeedd; font-family: Georgia, serif; font-size: 24px; font-style: italic; margin-bottom: 40px; line-height: 1.6; text-shadow: 0 0 30px rgba(255,215,100,0.5), 0 0 60px rgba(255,200,100,0.2);">
+      <div style="text-align: center; max-width: min(600px, 90vw); padding: 24px 16px;">
+        <p style="color: #ffeedd; font-family: Georgia, serif; font-size: clamp(18px, 4vw, 24px); font-style: italic; margin-bottom: 30px; line-height: 1.6; text-shadow: 0 0 30px rgba(255,215,100,0.5), 0 0 60px rgba(255,200,100,0.2);">
           "You've found StarKid. You may ask him one question."
         </p>
         <div style="position: relative;">
-          <input type="text" id="starkid-question" placeholder="Ask your question..." style="
+          <input type="text" id="starkid-question" placeholder="Ask your question..." autocomplete="off" autocapitalize="sentences" style="
             width: 100%;
-            padding: 16px 24px;
+            padding: 14px 20px;
             font-size: 18px;
             font-family: Georgia, serif;
             background: rgba(20, 15, 30, 0.8);
@@ -65,10 +67,11 @@ export class QuestionUI {
             color: #ffeedd;
             outline: none;
             box-shadow: 0 0 30px rgba(255, 200, 100, 0.1);
+            -webkit-appearance: none;
           " />
         </div>
         <button id="starkid-ask" style="
-          margin-top: 20px;
+          margin-top: 16px;
           padding: 12px 36px;
           font-size: 16px;
           font-family: Georgia, serif;
@@ -84,6 +87,10 @@ export class QuestionUI {
 
     const input = document.getElementById('starkid-question') as HTMLInputElement;
     const button = document.getElementById('starkid-ask') as HTMLButtonElement;
+
+    input.addEventListener('focus', () => {
+      setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    });
 
     input.focus();
 
@@ -120,12 +127,14 @@ export class QuestionUI {
   }
 
   private showAnswer(answer: string): void {
+    this.container.style.justifyContent = 'center';
+    this.container.style.paddingTop = '0';
     this.container.innerHTML = `
-      <div style="text-align: center; max-width: 650px; padding: 40px;">
+      <div style="text-align: center; max-width: min(650px, 90vw); padding: 24px 16px;">
         <div id="starkid-answer" style="
           color: #ffeedd;
           font-family: Georgia, serif;
-          font-size: 22px;
+          font-size: clamp(18px, 4vw, 22px);
           line-height: 1.8;
           text-shadow: 0 0 15px rgba(255, 200, 100, 0.2);
           opacity: 0;

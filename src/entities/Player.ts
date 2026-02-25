@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { WORLD_WIDTH, WORLD_HEIGHT } from '../utils/colors';
 import { audioManager } from '../systems/AudioManager';
+import type { VirtualJoystick } from '../ui/VirtualJoystick';
 
 const ACCELERATION = 280;
 const MAX_SPEED = 220;
@@ -19,9 +20,11 @@ export class Player {
   private jetpackSoundCooldown = 0;
   private wasThrusting = false;
   private disoriented = false;
+  private joystick: VirtualJoystick | null = null;
 
-  constructor(scene: Phaser.Scene, spawnX: number = WORLD_WIDTH / 2, spawnY: number = WORLD_HEIGHT / 2) {
+  constructor(scene: Phaser.Scene, spawnX: number = WORLD_WIDTH / 2, spawnY: number = WORLD_HEIGHT / 2, joystick?: VirtualJoystick) {
     this.scene = scene;
+    this.joystick = joystick ?? null;
 
     this.sprite = scene.physics.add.sprite(spawnX, spawnY, 'astronaut');
     this.sprite.setDepth(10);
@@ -42,21 +45,23 @@ export class Player {
       };
     }
 
-    scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      this.pointerHeld = true;
-      this.moveTarget = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
-    });
-
-    scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (this.pointerHeld) {
+    if (!this.joystick) {
+      scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        this.pointerHeld = true;
         this.moveTarget = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
-      }
-    });
+      });
 
-    scene.input.on('pointerup', () => {
-      this.pointerHeld = false;
-      this.moveTarget = null;
-    });
+      scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        if (this.pointerHeld) {
+          this.moveTarget = new Phaser.Math.Vector2(pointer.worldX, pointer.worldY);
+        }
+      });
+
+      scene.input.on('pointerup', () => {
+        this.pointerHeld = false;
+        this.moveTarget = null;
+      });
+    }
 
     this.exhaust = scene.add.particles(0, 0, 'exhaust', {
       speed: { min: 30, max: 80 },
@@ -121,7 +126,14 @@ export class Player {
       this.moveTarget = null;
     }
 
-    if (this.moveTarget && !keyboardActive) {
+    if (!keyboardActive && this.joystick?.isActive) {
+      const dir = this.joystick.direction;
+      const magnitude = dir.length();
+      if (magnitude > 0.1) {
+        ax = dir.x * ACCELERATION;
+        ay = dir.y * ACCELERATION;
+      }
+    } else if (this.moveTarget && !keyboardActive) {
       const dx = this.moveTarget.x - this.sprite.x;
       const dy = this.moveTarget.y - this.sprite.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
