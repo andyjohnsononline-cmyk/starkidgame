@@ -22,6 +22,11 @@ export class FriendshipScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.driftingStars = [];
+    this.rainbowBridges = [];
+    this.starkidSprite = null;
+    this.astronautSprite = null;
+
     this.cameras.main.setBackgroundColor('#0a0520');
     this.cameras.main.fadeIn(3000, 0, 0, 0);
 
