@@ -22,6 +22,10 @@ export class WinScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.questionUI = null;
+    this.orbitStars = [];
+    this.emanateEmitter = null;
+
     this.cameras.main.setBackgroundColor('#050510');
     this.cameras.main.fadeIn(2000, 0, 0, 0);
 
@@ -154,10 +158,15 @@ export class WinScene extends Phaser.Scene {
   }
 
   private onQuestionComplete(): void {
-    this.cameras.main.fadeOut(4000, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
+    let completed = false;
+    const doComplete = () => {
+      if (completed) return;
+      completed = true;
+
       this.questionUI?.destroy();
+      this.questionUI = null;
       this.emanateEmitter?.destroy();
+      this.emanateEmitter = null;
 
       for (const star of this.orbitStars) {
         star.sprite.destroy();
@@ -204,15 +213,22 @@ export class WinScene extends Phaser.Scene {
         duration: 2000,
         ease: 'Sine.easeInOut',
       });
-    });
+    };
+
+    this.cameras.main.fadeOut(4000, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', doComplete);
+    this.time.delayedCall(4500, doComplete);
   }
 
   private startRainbowSlide(): void {
     this.questionUI?.destroy();
     this.questionUI = null;
 
-    this.cameras.main.fadeOut(2000, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
+    let transitioned = false;
+    const doTransition = () => {
+      if (transitioned) return;
+      transitioned = true;
+
       this.emanateEmitter?.destroy();
       this.emanateEmitter = null;
 
@@ -222,6 +238,10 @@ export class WinScene extends Phaser.Scene {
       this.orbitStars = [];
 
       this.scene.start('FriendshipScene');
-    });
+    };
+
+    this.cameras.main.fadeOut(2000, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', doTransition);
+    this.time.delayedCall(2500, doTransition);
   }
 }
